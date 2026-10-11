@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.lang.psi.impl.controlStructures;
 
+import consulo.annotation.access.RequiredReadAction;
+import consulo.localize.LocalizeValue;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RStructuralElement;
 
 import consulo.language.ast.ASTNode;
@@ -34,97 +35,84 @@ import org.jetbrains.plugins.ruby.ruby.presentation.RAliasPresentationUtil;
 import consulo.language.psi.stub.StubElement;
 
 /**
- * Created by IntelliJ IDEA.
- * User: oleg
- * Date: 18.06.2006
+ * @author oleg
+ * @since 2006-06-18
  */
-public class RAliasStatementImpl extends RPsiElementBase<StubElement> implements RAliasStatement
-{
-	public RAliasStatementImpl(ASTNode astNode)
-	{
-		super(astNode);
-	}
+public class RAliasStatementImpl extends RPsiElementBase<StubElement> implements RAliasStatement {
+    public RAliasStatementImpl(ASTNode astNode) {
+        super(astNode);
+    }
 
-	@Override
-	public void accept(@Nonnull PsiElementVisitor visitor)
-	{
-		if(visitor instanceof RubyElementVisitor)
-		{
-			((RubyElementVisitor) visitor).visitRAliasStatement(this);
-			return;
-		}
-		super.accept(visitor);
-	}
+    @Override
+    public void accept(@Nonnull PsiElementVisitor visitor) {
+        if (visitor instanceof RubyElementVisitor elemVisitor) {
+            elemVisitor.visitRAliasStatement(this);
+            return;
+        }
+        super.accept(visitor);
+    }
 
-	@Override
-	@Nullable
-	public RPsiElement getPsiOldName()
-	{
-		return getChildByType(RPsiElement.class, 1);
-	}
+    @Override
+    @Nullable
+    public RPsiElement getPsiOldName() {
+        return getChildByType(RPsiElement.class, 1);
+    }
 
-	@Override
-	@Nullable
-	public RPsiElement getPsiNewName()
-	{
-		return getChildByType(RPsiElement.class, 0);
-	}
+    @Override
+    @Nullable
+    public RPsiElement getPsiNewName() {
+        return getChildByType(RPsiElement.class, 0);
+    }
 
-	@Override
-	@Nonnull
-	public String getOldName()
-	{
-		return getName(getPsiOldName());
-	}
+    @Override
+    @Nonnull
+    @RequiredReadAction
+    public String getOldName() {
+        return getName(getPsiOldName());
+    }
 
-	@Override
-	@Nonnull
-	public String getNewName()
-	{
-		return getName(getPsiNewName());
-	}
+    @Override
+    @Nonnull
+    @RequiredReadAction
+    public String getNewName() {
+        return getName(getPsiNewName());
+    }
 
-	@Override
-	public StructureType getType()
-	{
-		return StructureType.ALIAS;
-	}
+    @Override
+    @RequiredReadAction
+    public StructureType getType() {
+        return StructureType.ALIAS;
+    }
 
-	@Override
-	@Nonnull
-	public String getPresentableText()
-	{
-		return getText();
-	}
+    @Override
+    @Nonnull
+    @RequiredReadAction
+    public LocalizeValue getPresentableText() {
+        return LocalizeValue.of(getText());
+    }
 
-	@Nonnull
-	private static String getName(RPsiElement element)
-	{
-		if(element != null)
-		{
-			if(element instanceof RSymbol)
-			{
-				return ((RSymbol) element).getObject().getText();
-			}
-			return element.getText();
-		}
-		return "";
-	}
+    @Nonnull
+    @RequiredReadAction
+    private static String getName(RPsiElement element) {
+        if (element != null) {
+            if (element instanceof RSymbol symbol) {
+                return symbol.getObject().getText();
+            }
+            return element.getText();
+        }
+        return "";
+    }
 
-	@Override
-	public boolean equalsToVirtual(@Nonnull final RStructuralElement element)
-	{
-		if(!(element instanceof RAliasStatement))
-		{
-			return false;
-		}
-		final RAliasStatement alias = (RAliasStatement) element;
-		return getNewName().equals(alias.getNewName()) && getOldName().equals(alias.getOldName());
-	}
+    @Override
+    @RequiredReadAction
+    public boolean equalsToVirtual(@Nonnull RStructuralElement element) {
+        return element instanceof RAliasStatement alias
+            && getNewName().equals(alias.getNewName())
+            && getOldName().equals(alias.getOldName());
+    }
 
-	@Override
-	public ItemPresentation getPresentation()
-	{
-		return RAliasPresentationUtil.getPresentation(this);
-	}
+    @Override
+    public ItemPresentation getPresentation() {
+        return RAliasPresentationUtil.getPresentation(this);
+    }
 }

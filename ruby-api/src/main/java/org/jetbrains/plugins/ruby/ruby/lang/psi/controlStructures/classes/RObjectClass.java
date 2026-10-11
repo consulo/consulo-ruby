@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.classes;
 
+import consulo.localize.LocalizeValue;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.ruby.lang.formatter.models.wrap.RWrapLastChild;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.RFormatStructureElement;
@@ -23,16 +24,13 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.methods.RClass
 import org.jetbrains.plugins.ruby.ruby.lang.psi.holders.RFieldConstantContainer;
 
 /**
- * Created by IntelliJ IDEA.
- * User: oleg
- * Date: 18.07.2006
+ * @author oleg
+ * @since 2006-07-18
  */
-public interface RObjectClass extends RFieldConstantContainer, RFormatStructureElement, RWrapLastChild
-{
+public interface RObjectClass extends RFieldConstantContainer, RFormatStructureElement, RWrapLastChild {
+    @Nullable
+    public RClassObject getObject();
 
-	@Nullable
-	public RClassObject getObject();
-
-	@jakarta.annotation.Nonnull
-	public String getPresentableName();
+    @Nonnull
+    public LocalizeValue getPresentableName();
 }

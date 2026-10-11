@@ -13,53 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.structureView.impl.xml;
 
 import java.util.Collection;
 import java.util.Collections;
 
+import consulo.annotation.access.RequiredReadAction;
 import consulo.fileEditor.structureView.StructureViewTreeElement;
 import consulo.language.editor.structureView.PsiTreeElementBase;
-import org.jetbrains.annotations.NonNls;
+import consulo.localize.LocalizeValue;
 import jakarta.annotation.Nonnull;
 import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.psi.impl.rhtmlRoot.RHTMLRubyInjectionTag;
 import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.psi.impl.rhtmlRoot.RHTMLRubyInjectionTagImpl;
 import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
 
 /**
- * Created by IntelliJ IDEA.
- *
- * @author: Roman Chernyatchik
- * @date: 21.05.2007
+ * @author Roman Chernyatchik
+ * @since 2007-05-21
  */
-public class RHTMLScriptNode extends PsiTreeElementBase<RHTMLRubyInjectionTag>
-{
-	public static final String RHTML_PREFIX = "rhtml:";
+public class RHTMLScriptNode extends PsiTreeElementBase<RHTMLRubyInjectionTag> {
+    public static final String RHTML_PREFIX = "rhtml:";
 
-	public RHTMLScriptNode(final RHTMLRubyInjectionTagImpl element)
-	{
-		super(element);
-	}
+    public RHTMLScriptNode(RHTMLRubyInjectionTagImpl element) {
+        super(element);
+    }
 
-	@Override
-	@NonNls
-	public String getPresentableText()
-	{
-		return RHTML_PREFIX;
-	}
+    @Override
+    public LocalizeValue getPresentableText() {
+        return LocalizeValue.of(RHTML_PREFIX);
+    }
 
-	@Override
-	public String getLocationString()
-	{
-		final RHTMLRubyInjectionTag element = getElement();
-		return element != null ? element.getTagText().trim() : TextUtil.EMPTY_STRING;
-	}
+    @Override
+    @RequiredReadAction
+    public String getLocationString() {
+        RHTMLRubyInjectionTag element = getElement();
+        return element != null ? element.getTagText().trim() : TextUtil.EMPTY_STRING;
+    }
 
-	@Override
-	@Nonnull
-	public Collection<StructureViewTreeElement> getChildrenBase()
-	{
-		return Collections.emptyList();
-	}
+    @Override
+    @Nonnull
+    public Collection<StructureViewTreeElement> getChildrenBase() {
+        return Collections.emptyList();
+    }
 }

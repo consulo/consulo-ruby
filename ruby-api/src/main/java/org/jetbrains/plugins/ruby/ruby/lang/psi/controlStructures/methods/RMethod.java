@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.methods;
 
+import consulo.localize.LocalizeValue;
 import jakarta.annotation.Nonnull;
-import org.jetbrains.annotations.NonNls;
 
 import jakarta.annotation.Nullable;
 
@@ -31,42 +30,34 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.holders.RContainer;
 import consulo.language.psi.PsiNamedElement;
 
 /**
- * Created by IntelliJ IDEA.
- * User: oleg
- * Date: 18.07.2006
+ * @author oleg
+ * @since 2006-07-18
  */
-public interface RMethod extends RFormatStructureElement, RWrapLastChild, PsiNamedElement, RContainer
-{
+public interface RMethod extends RFormatStructureElement, RWrapLastChild, PsiNamedElement, RContainer {
+    String INITIALIZE = "initialize";
+    String NEW = "new";
+    String JAVA_CLASS = "java_class";
+    String RESPONDS_TO = "responds_to?";
 
-	@NonNls
-	String INITIALIZE = "initialize";
-	@NonNls
-	String NEW = "new";
-	@NonNls
-	String JAVA_CLASS = "java_class";
-	@NonNls
-	String RESPONDS_TO = "responds_to?";
+    @Nullable
+    @SuppressWarnings({"NullableProblems"})
+    public RMethodName getMethodName();
 
+    @Nullable
+    public RArgumentList getArgumentList();
 
-	@SuppressWarnings({"NullableProblems"})
-	@Nullable
-	public RMethodName getMethodName();
+    public boolean isConstructor();
 
-	@Nullable
-	public RArgumentList getArgumentList();
+    @Nonnull
+    public String getPresentableName(boolean includeDefaultArgs);
 
-	public boolean isConstructor();
+    @Nonnull
+    public List<ArgumentInfo> getArgumentInfos();
 
-	@Nonnull
-	public String getPresentableName(final boolean includeDefaultArgs);
+    @Nonnull
+    public LocalizeValue getPresentableName();
 
-	@Nonnull
-	public List<ArgumentInfo> getArgumentInfos();
+    public boolean equalsToMethod(@Nonnull RMethod otherMethod);
 
-	@Nonnull
-	public String getPresentableName();
-
-	public boolean equalsToMethod(@Nonnull final RMethod otherMethod);
-
-	RCompoundStatement getCompoundStatement();
+    RCompoundStatement getCompoundStatement();
 }
