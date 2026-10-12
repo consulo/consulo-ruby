@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.lang.psi.impl.holders;
 
+import consulo.annotation.access.RequiredReadAction;
 import consulo.language.ast.ASTNode;
 import consulo.language.psi.stub.IStubElementType;
 import consulo.language.psi.stub.StubElement;
 import consulo.virtualFileSystem.VirtualFile;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.resolve.scope.RootScope;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.resolve.scope.ScopeBuilder;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.types.TypeInferenceContext;
@@ -37,28 +36,27 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.holders.RContainer;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.RPsiElementBase;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.controlStructures.RNameUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.holders.utils.RContainerUtil;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by IntelliJ IDEA.
- * User: oleg
- * Date: 21.07.2006
+ * @author oleg
+ * @since 2006-07-21
  */
 public abstract class RContainerBase<T extends StubElement> extends RPsiElementBase<T> implements RContainer {
     private AccessModifier myAccessModifier = AccessModifier.PUBLIC;
     protected List<RStructuralElement> myStructureElements;
     private Instruction[] myControlFlow;
 
-    public RContainerBase(final ASTNode astNode) {
+    public RContainerBase(ASTNode astNode) {
         super(astNode);
     }
 
-    public RContainerBase(@Nonnull final T stub, @Nonnull final IStubElementType nodeType) {
+    public RContainerBase(@Nonnull T stub, @Nonnull IStubElementType nodeType) {
         super(stub, nodeType);
     }
-
 
     @Override
     @Nonnull
@@ -70,14 +68,14 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
     @Nonnull
     public AccessModifier getAccessModifier() {
         // getSubContainers of parentContainer will set correct access modifiers to all of it`s children
-        final RContainer parentContainer = getParentContainer();
+        RContainer parentContainer = getParentContainer();
         if (parentContainer != null) {
             parentContainer.getStructureElements();
         }
         return myAccessModifier;
     }
 
-    public void setAccessModifier(final AccessModifier modifier) {
+    public void setAccessModifier(AccessModifier modifier) {
         myAccessModifier = modifier;
     }
 
@@ -101,7 +99,7 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
         myScope = null;
 
         // Clear control flow and inference info
-        final TypeInferenceContext context = TypeInferenceHelper.getInstance(getProject()).getContext();
+        TypeInferenceContext context = TypeInferenceHelper.getInstance(getProject()).getContext();
         if (context != null) {
             context.localVariablesTypesCache.remove(this);
         }
@@ -121,7 +119,6 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
         return getContainingFile().getVirtualFile();
     }
 
-
     @Override
     @Nullable
     public RContainer getVirtualParentContainer() {
@@ -131,7 +128,7 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
     @Override
     @Nonnull
     public List<RStructuralElement> getVirtualStructureElements() {
-        final ArrayList<RStructuralElement> elements = new ArrayList<RStructuralElement>();
+        List<RStructuralElement> elements = new ArrayList<>();
         for (RStructuralElement element : getStructureElements()) {
             elements.add(element);
         }
@@ -140,7 +137,7 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
 
     @Override
     public int getIndexOf(@Nonnull RStructuralElement element) {
-        final List<RStructuralElement> structuralElements = getStructureElements();
+        List<RStructuralElement> structuralElements = getStructureElements();
         for (int i = 0; i < structuralElements.size(); i++) {
             if (element == structuralElements.get(i)) {
                 return i;
@@ -168,10 +165,8 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
     //// Name related methods
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
     @Override
-    @Nonnull
-    public String getName() {
+    public @Nullable String getName() {
         return RNameUtil.getName(getFullPath());
     }
 
@@ -183,6 +178,7 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
 
     @Override
     @Nonnull
+    @RequiredReadAction
     public String getFullName() {
         return RNameUtil.getPresentableName(getNameElement().getText());
     }
@@ -195,11 +191,11 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
     protected abstract RPsiElement getNameElement();
 
     @Override
-    public boolean equalsToVirtual(@Nonnull final RStructuralElement element) {
-        if (!(element instanceof RContainer)) {
+    @RequiredReadAction
+    public boolean equalsToVirtual(@Nonnull RStructuralElement element) {
+        if (!(element instanceof RContainer container)) {
             return false;
         }
-        final RContainer container = (RContainer) element;
         // Container changes
         if (getType() != container.getType()) {
             return false;
@@ -220,7 +216,7 @@ public abstract class RContainerBase<T extends StubElement> extends RPsiElementB
 
     @Nonnull
     public RBodyStatement getBody() {
-        final List<RBodyStatement> list = getChildrenByType(RBodyStatement.class);
+        List<RBodyStatement> list = getChildrenByType(RBodyStatement.class);
         assert list.size() == 1;
         return list.get(0);
     }

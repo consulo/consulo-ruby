@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.lang.findUsages;
 
+import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.language.Language;
 import jakarta.annotation.Nonnull;
@@ -36,100 +36,81 @@ import consulo.language.cacheBuilder.WordsScanner;
 import consulo.language.psi.PsiElement;
 
 /**
- * Created by IntelliJ IDEA.
- *
- * @author: oleg
- * @date: Mar 9, 2007
+ * @author oleg
+ * @since 2007-03-09
  */
 @ExtensionImpl
-public class RubyFindUsagesProvider implements FindUsagesProvider
-{
-	private RubyWordsScanner rubyWordsScanner;
+public class RubyFindUsagesProvider implements FindUsagesProvider {
+    private RubyWordsScanner rubyWordsScanner;
 
-	@Override
-	@Nullable
-	public WordsScanner getWordsScanner()
-	{
-		if(rubyWordsScanner == null)
-		{
-			rubyWordsScanner = new RubyWordsScanner();
-		}
-		return rubyWordsScanner;
-	}
+    @Override
+    @Nullable
+    public WordsScanner getWordsScanner() {
+        if (rubyWordsScanner == null) {
+            rubyWordsScanner = new RubyWordsScanner();
+        }
+        return rubyWordsScanner;
+    }
 
-	@Override
-	public boolean canFindUsagesFor(@Nonnull final PsiElement psiElement)
-	{
-		// we can find containers except RObjectClass
-		if(psiElement instanceof RContainer && !(psiElement instanceof RObjectClass))
-		{
-			return true;
-		}
+    @Override
+    public boolean canFindUsagesFor(@Nonnull PsiElement psiElement) {
+        // we can find containers except RObjectClass
+        if (psiElement instanceof RContainer && !(psiElement instanceof RObjectClass)) {
+            return true;
+        }
 
-		if(psiElement instanceof RField)
-		{
-			return true;
-		}
-		if(psiElement instanceof RConstant)
-		{
-			return ((RConstant) psiElement).isInDefinition();
-		}
-		if(psiElement instanceof RGlobalVariable)
-		{
-			return true;
-		}
-		if(psiElement instanceof RIdentifier)
-		{
-			final RIdentifier id = (RIdentifier) psiElement;
-			return id.isParameter() || id.isLocalVariable();
-		}
-		return false;
-	}
+        if (psiElement instanceof RField) {
+            return true;
+        }
+        if (psiElement instanceof RConstant constant) {
+            return constant.isInDefinition();
+        }
+        if (psiElement instanceof RGlobalVariable) {
+            return true;
+        }
+        if (psiElement instanceof RIdentifier id) {
+            return id.isParameter() || id.isLocalVariable();
+        }
+        return false;
+    }
 
-	@Override
-	@Nullable
-	public String getHelpId(@Nonnull PsiElement psiElement)
-	{
-		return null;
-	}
+    @Override
+    @Nullable
+    public String getHelpId(@Nonnull PsiElement psiElement) {
+        return null;
+    }
 
-	@Override
-	@Nonnull
-	public String getType(@Nonnull PsiElement psiElement)
-	{
-		if(psiElement instanceof RIdentifier)
-		{
-			final RIdentifier id = (RIdentifier) psiElement;
-			if(id.isParameter())
-			{
-				return RBundle.message("parameter");
-			}
-			if(id.isLocalVariable())
-			{
-				return RBundle.message("local.variable");
-			}
-		}
-		return psiElement.toString();
-	}
+    @Override
+    @Nonnull
+    public String getType(@Nonnull PsiElement psiElement) {
+        if (psiElement instanceof RIdentifier id) {
+            if (id.isParameter()) {
+                return RBundle.message("parameter");
+            }
+            if (id.isLocalVariable()) {
+                return RBundle.message("local.variable");
+            }
+        }
+        return psiElement.toString();
+    }
 
-	@Override
-	@Nonnull
-	public String getDescriptiveName(@Nonnull PsiElement element)
-	{
-		return RubyPsiUtil.getPresentableName(element);
-	}
+    @Override
+    @Nonnull
+    @RequiredReadAction
+    public String getDescriptiveName(@Nonnull PsiElement element) {
+        return RubyPsiUtil.getPresentableName(element).get();
+    }
 
-	@Override
-	@Nonnull
-	public String getNodeText(@Nonnull PsiElement element, boolean useFullName)
-	{
-		return RubyPsiUtil.getPresentableName(element);
-	}
+    @Override
+    @Nonnull
+    @RequiredReadAction
+    public String getNodeText(@Nonnull PsiElement element, boolean useFullName) {
+        return RubyPsiUtil.getPresentableName(element).get();
+    }
 
-	@Nonnull
-	@Override
-	public Language getLanguage()
-	{
-		return RubyLanguage.INSTANCE;
-	}
+    @Nonnull
+    @Override
+    public Language getLanguage() {
+        return RubyLanguage.INSTANCE;
+    }
 }

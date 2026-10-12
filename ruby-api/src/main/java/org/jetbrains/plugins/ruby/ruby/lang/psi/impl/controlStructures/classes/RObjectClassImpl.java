@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.lang.psi.impl.controlStructures.classes;
 
+import consulo.annotation.access.RequiredReadAction;
+import consulo.language.ast.ASTNode;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiElementVisitor;
+import consulo.language.psi.stub.IStubElementType;
+import consulo.localize.LocalizeValue;
+import consulo.navigation.ItemPresentation;
+import consulo.ui.image.Image;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-
-import consulo.language.psi.PsiElementVisitor;
-import org.jetbrains.plugins.ruby.ruby.cache.psi.RVirtualName;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.StructureType;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.RubyElementTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
@@ -31,77 +35,60 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.holders.RFieldConstantConta
 import org.jetbrains.plugins.ruby.ruby.lang.psi.stubs.RubyObjectClassStub;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.visitors.RubyElementVisitor;
 import org.jetbrains.plugins.ruby.ruby.presentation.RObjectClassPresentationUtil;
-import consulo.language.ast.ASTNode;
-import consulo.language.psi.stub.IStubElementType;
-import consulo.navigation.ItemPresentation;
-import consulo.language.psi.PsiElement;
-import consulo.ui.image.Image;
 
 /**
- * Created by IntelliJ IDEA.
- * User: oleg
- * Date: 11.06.2006
+ * @author oleg
+ * @since 2006-06-11
  */
-public class RObjectClassImpl extends RFieldConstantContainerImpl<RubyObjectClassStub> implements RObjectClass
-{
-	public RObjectClassImpl(ASTNode astNode)
-	{
-		super(astNode);
-	}
+public class RObjectClassImpl extends RFieldConstantContainerImpl<RubyObjectClassStub> implements RObjectClass {
+    public RObjectClassImpl(ASTNode astNode) {
+        super(astNode);
+    }
 
-	public RObjectClassImpl(@Nonnull RubyObjectClassStub stub, @Nonnull IStubElementType nodeType)
-	{
-		super(stub, nodeType);
-	}
+    public RObjectClassImpl(@Nonnull RubyObjectClassStub stub, @Nonnull IStubElementType nodeType) {
+        super(stub, nodeType);
+    }
 
-	@Override
-	@Nonnull
-	public ItemPresentation getPresentation()
-	{
-		return RObjectClassPresentationUtil.getPresentation(this);
-	}
+    @Override
+    @Nonnull
+    public ItemPresentation getPresentation() {
+        return RObjectClassPresentationUtil.getPresentation(this);
+    }
 
-	public Image getIcon(int flags)
-	{
-		return RObjectClassPresentationUtil.getIcon();
-	}
+    public Image getIcon(int flags) {
+        return RObjectClassPresentationUtil.getIcon();
+    }
 
-	@Override
-	@Nonnull
-	public String getPresentableName()
-	{
-		return "<<" + getFullName();
-	}
+    @Override
+    @Nonnull
+    public LocalizeValue getPresentableName() {
+        return LocalizeValue.of("<<" + getFullName());
+    }
 
-	@Override
-	@Nullable
-	public RClassObject getObject()
-	{
-		PsiElement result = RubyPsiUtil.getChildByFilter(this, RubyElementTypes.CLASS_OBJECT, 0);
-		return result != null ? (RClassObjectImpl) result : null;
-	}
+    @Override
+    @Nullable
+    public RClassObject getObject() {
+        PsiElement result = RubyPsiUtil.getChildByFilter(this, RubyElementTypes.CLASS_OBJECT, 0);
+        return result != null ? (RClassObjectImpl) result : null;
+    }
 
-	@Override
-	public void accept(@Nonnull PsiElementVisitor visitor)
-	{
-		if(visitor instanceof RubyElementVisitor)
-		{
-			((RubyElementVisitor) visitor).visitRObjectClass(this);
-			return;
-		}
-		super.accept(visitor);
-	}
+    @Override
+    public void accept(@Nonnull PsiElementVisitor visitor) {
+        if (visitor instanceof RubyElementVisitor elementVisitor) {
+            elementVisitor.visitRObjectClass(this);
+            return;
+        }
+        super.accept(visitor);
+    }
 
-	@Override
-	public StructureType getType()
-	{
-		return StructureType.OBJECT_CLASS;
-	}
+    @Override
+    @RequiredReadAction
+    public StructureType getType() {
+        return StructureType.OBJECT_CLASS;
+    }
 
-
-	@Override
-	protected RPsiElement getNameElement()
-	{
-		return getObject();
-	}
+    @Override
+    protected RPsiElement getNameElement() {
+        return getObject();
+    }
 }

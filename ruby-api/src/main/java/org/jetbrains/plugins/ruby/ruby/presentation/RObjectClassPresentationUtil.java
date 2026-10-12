@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.presentation;
 
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.classes.RObjectClass;
@@ -27,33 +26,23 @@ import consulo.navigation.ItemPresentation;
 import consulo.ui.image.Image;
 
 /**
- * Created by IntelliJ IDEA.
+ * For ".self" etc.
  *
- * @author: oleg
- * @date: Mar 13, 2007
+ * @author oleg
+ * @since 2007-03-13
  */
+public class RObjectClassPresentationUtil {
+    public static Image getIcon() {
+        return RubyIcons.RUBY_OBJECT_CLASS_NODE;
+    }
 
-/**
- * For ".self" etc
- */
-public class RObjectClassPresentationUtil
-{
+    @Nonnull
+    public static ItemPresentation getPresentation(@Nonnull RObjectClass objectClass) {
+        Image icon = getIcon();
+        return new PresentationData(objectClass.getPresentableName(), TextUtil.wrapInParens(getLocation(objectClass)), icon, null);
+    }
 
-	public static Image getIcon()
-	{
-		return RubyIcons.RUBY_OBJECT_CLASS_NODE;
-	}
-
-	@Nonnull
-	public static ItemPresentation getPresentation(@Nonnull final RObjectClass objectClass)
-	{
-		final Image icon = getIcon();
-		return new PresentationData(objectClass.getPresentableName(), TextUtil.wrapInParens(getLocation(objectClass)), icon, null);
-	}
-
-	private static String getLocation(RObjectClass objectClass)
-	{
-		return RContainerPresentationUtil.getLocation(objectClass);
-	}
-
+    private static String getLocation(RObjectClass objectClass) {
+        return RContainerPresentationUtil.getLocation(objectClass);
+    }
 }

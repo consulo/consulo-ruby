@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures;
 
 import consulo.annotation.access.RequiredReadAction;
+import consulo.localize.LocalizeValue;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RStructuralElement;
 
 /**
- * Created by IntelliJ IDEA.
- *
- * @author: oleg
- * @date: Feb 5, 2007
+ * @author oleg
+ * @since Feb 5, 2007
  */
 public interface RAliasStatement extends RStructuralElement {
     @Nullable
@@ -44,5 +42,5 @@ public interface RAliasStatement extends RStructuralElement {
     String getNewName();
 
     @Nonnull
-    String getPresentableText();
+    LocalizeValue getPresentableText();
 }
