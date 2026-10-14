@@ -90,7 +90,7 @@ public abstract class AbstractRubyRunConfigurationLayout<C extends AbstractRubyR
         }
         myModuleModel = FlatDataModel.of(moduleItems);
         myModuleBox = ComboBox.create(myModuleModel);
-        myModuleBox.setRender((presentation, item) -> {
+        myModuleBox.setRenderer((presentation, item) -> {
             String name = item.getValue();
             if (StringUtil.isEmpty(name)) {
                 presentation.append(RubyApiLocalize.runConfigurationMessagesNone());
