@@ -16,27 +16,28 @@
 
 package org.jetbrains.plugins.ruby.ruby.run.confuguration;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import jakarta.annotation.Nonnull;
 
 import consulo.execution.RuntimeConfigurationException;
 import consulo.execution.configuration.ConfigurationFactory;
+import consulo.execution.configuration.EnvironmentAware;
+import consulo.execution.configuration.LegacyRunConfigurationConverter;
 import consulo.execution.configuration.LocatableConfiguration;
+import consulo.execution.configuration.WorkingDirectoryAware;
+import consulo.execution.configuration.fragment.EnvironmentFragmentState;
+import consulo.execution.configuration.fragment.WorkingDirectoryFragmentState;
 import consulo.module.ModuleManager;
 import consulo.project.Project;
-import consulo.util.xml.serializer.InvalidDataException;
-import consulo.util.xml.serializer.WriteExternalException;
-import org.jdom.Element;
+import consulo.util.lang.StringUtil;
 
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.tests.AbstractRTestsRunConfigurationOptions;
 import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkUtil;
 import org.jetbrains.plugins.ruby.support.utils.RModuleUtil;
 import consulo.execution.configuration.RunConfigurationBase;
-import consulo.logging.Logger;
 import consulo.module.Module;
 import consulo.content.bundle.Sdk;
 import consulo.content.bundle.SdkTable;
@@ -47,32 +48,75 @@ import consulo.content.bundle.SdkTable;
  * @author: Roman Chernyatchik
  * @date: 18.07.2007
  */
-public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase implements LocatableConfiguration, AbstractRubyRunConfigurationParams
+public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase implements LocatableConfiguration, AbstractRubyRunConfigurationParams, WorkingDirectoryAware,
+		EnvironmentAware
 {
 	protected final static String SUGGESTED_NAME = RBundle.message("run.configuration.messages.suggested.name");
-	private static final String TO_CLONE_ELEMENT_NAME = "TO_CLONE_ELEMENT_NAME";
 
-	private static final Logger LOG = Logger.getInstance(AbstractRubyRunConfiguration.class.getName());
-
-
-	private String myModuleName;
-
-	@Nonnull
-	private String myWorkingDirectory = TextUtil.EMPTY_STRING;
-	private String myRubyArgs = TextUtil.EMPTY_STRING;
-	private String mySdkName = TextUtil.EMPTY_STRING;
-
-	private boolean myShouldUseAlternativeSdk; //false
-
-	private Map<String, String> myEnvs = new LinkedHashMap<String, String>();
-	private boolean myPassParentEnvs = true;
+	private static final String RUBY_ARGS = "RUBY_ARGS";
+	private static final String WORK_DIR = "WORK DIR";
+	private static final String MODULE_NAME = "MODULE_NAME";
+	private static final String SHOULD_USE_SDK = "SHOULD_USE_SDK";
+	private static final String ALTERN_SDK_NAME = "ALTERN_SDK_NAME";
+	private static final String PASS_PARENT_ENVS = "myPassParentEnvs";
+	private static final String TESTS_FOLDER_PATH = "TESTS_FOLDER_PATH";
+	private static final String TEST_SCRIPT_PATH = "TEST_SCRIPT_PATH";
+	private static final String TEST_FILE_MASK = "TEST_FILE_MASK";
+	private static final String TEST_TEST_TYPE = "TEST_TEST_TYPE";
 
 	protected AbstractRubyRunConfiguration(final Project project, final ConfigurationFactory factory, final String name)
 	{
 		super(project, factory, name);
 	}
 
-	protected abstract AbstractRubyRunConfiguration createInstance();
+	@Override
+	public AbstractRubyRunConfigurationOptions getOptions()
+	{
+		return (AbstractRubyRunConfigurationOptions) super.getOptions();
+	}
+
+	/**
+	 * Converts the interpreter, module, working directory and environment of an old configuration element.
+	 */
+	protected static void convertLegacyCommonState(LegacyRunConfigurationConverter converter,
+			RubyLegacyRunConfigurationState state,
+			AbstractRubyRunConfigurationOptions options)
+	{
+		options.setRubyArgs(state.get(RUBY_ARGS));
+		options.setModuleName(state.get(MODULE_NAME));
+		options.setUseAlternativeSdk(state.getBoolean(SHOULD_USE_SDK));
+		options.setAlternativeSdkName(state.get(ALTERN_SDK_NAME));
+
+		converter.addFragment(new WorkingDirectoryFragmentState(state.get(WORK_DIR)));
+		converter.addFragment(new EnvironmentFragmentState(converter.readEnvs(), state.getBoolean(PASS_PARENT_ENVS)));
+	}
+
+	/**
+	 * Converts the test target shared by test configurations of an old configuration element.
+	 */
+	protected static void convertLegacyTestTargetState(RubyLegacyRunConfigurationState state, AbstractRTestsRunConfigurationOptions options)
+	{
+		options.setTestsFolderPath(state.get(TESTS_FOLDER_PATH));
+		options.setTestScriptPath(state.get(TEST_SCRIPT_PATH));
+		options.setTestFileMask(state.get(TEST_FILE_MASK));
+		String testType = state.get(TEST_TEST_TYPE);
+		options.setTestType(testType != null ? parseTestType(testType).name() : null);
+	}
+
+	protected static TestType parseTestType(@Nullable String value)
+	{
+		if(value != null)
+		{
+			for(TestType testType : TestType.values())
+			{
+				if(testType.name().equals(value))
+				{
+					return testType;
+				}
+			}
+		}
+		return TestType.TEST_SCRIPT;
+	}
 
 	@Nonnull
 	public Module[] getModules()
@@ -84,19 +128,19 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 	@Nullable
 	public Module getModule()
 	{
-		return findModuleByName(myModuleName);
+		return findModuleByName(getModuleName());
 	}
 
 	@Nullable
 	public String getModuleName()
 	{
-		return myModuleName;
+		return getOptions().getModuleName();
 	}
 
 	@Override
 	public String getRubyArgs()
 	{
-		return myRubyArgs;
+		return StringUtil.notNullize(getOptions().getRubyArgs());
 	}
 
 	@Nullable
@@ -118,7 +162,7 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 	@Nonnull
 	public String getWorkingDirectory()
 	{
-		return myWorkingDirectory;
+		return StringUtil.notNullize(WorkingDirectoryAware.super.getWorkingDirectory());
 	}
 
 	@Override
@@ -135,19 +179,19 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 
 	public void setModuleName(@Nullable String moduleName)
 	{
-		myModuleName = TextUtil.getAsNotNull(moduleName);
+		getOptions().setModuleName(moduleName);
 	}
 
 	@Override
-	public void setRubyArgs(@Nullable String myRubyArgs)
+	public void setRubyArgs(@Nullable String rubyArgs)
 	{
-		this.myRubyArgs = TextUtil.getAsNotNull(myRubyArgs);
+		getOptions().setRubyArgs(rubyArgs);
 	}
 
 	@Override
 	public void setWorkingDirectory(@Nullable final String dir)
 	{
-		this.myWorkingDirectory = TextUtil.getAsNotNull(dir);
+		WorkingDirectoryAware.super.setWorkingDirectory(dir);
 	}
 
 	@Override
@@ -170,17 +214,18 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 
 	public String getAlternativeSdkName()
 	{
-		return mySdkName;
+		return StringUtil.notNullize(getOptions().getAlternativeSdkName());
 	}
 
 	@Override
 	public Sdk getAlternativeSdk()
 	{
-		if(mySdkName == null)
+		final String sdkName = getOptions().getAlternativeSdkName();
+		if(sdkName == null)
 		{
 			return null;
 		}
-		final Sdk sdk = SdkTable.getInstance().findSdk(mySdkName);
+		final Sdk sdk = SdkTable.getInstance().findSdk(sdkName);
 		return RubySdkUtil.isSDKValid(sdk) ? sdk : null;
 	}
 
@@ -192,7 +237,7 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 
 	public void setAlternativeSdkName(@Nullable final String sdkName)
 	{
-		mySdkName = TextUtil.getAsNotNull(sdkName);
+		getOptions().setAlternativeSdkName(sdkName);
 	}
 
 	protected abstract void validateConfiguration(final boolean isExecution) throws Exception;
@@ -217,60 +262,37 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 	@Override
 	public boolean shouldUseAlternativeSdk()
 	{
-		return myShouldUseAlternativeSdk;
+		return getOptions().isUseAlternativeSdk();
 	}
 
 	@Override
 	public void setShouldUseAlternativeSdk(final boolean shouldUseAlternativeSdk)
 	{
-		myShouldUseAlternativeSdk = shouldUseAlternativeSdk;
+		getOptions().setUseAlternativeSdk(shouldUseAlternativeSdk);
 	}
 
 	@Override
 	public Map<String, String> getEnvs()
 	{
-		return myEnvs;
+		return EnvironmentAware.super.getEnvs();
 	}
 
 	@Override
 	public void setEnvs(@Nonnull final Map<String, String> envs)
 	{
-		myEnvs = envs;
+		EnvironmentAware.super.setEnvs(envs);
 	}
 
 	@Override
 	public boolean isPassParentEnvs()
 	{
-		return myPassParentEnvs;
+		return EnvironmentAware.super.isPassParentEnvs();
 	}
 
 	@Override
 	public void setPassParentEnvs(final boolean passParentEnvs)
 	{
-		this.myPassParentEnvs = passParentEnvs;
-	}
-
-	@Override
-	public AbstractRubyRunConfiguration clone()
-	{
-		final Element element = new Element(TO_CLONE_ELEMENT_NAME);
-		try
-		{
-			writeExternal(element);
-			final AbstractRubyRunConfiguration configuration = createInstance();
-			configuration.readExternal(element);
-			return configuration;
-		}
-		catch(InvalidDataException e)
-		{
-			LOG.error(e);
-			return null;
-		}
-		catch(WriteExternalException e)
-		{
-			LOG.error(e);
-			return null;
-		}
+		EnvironmentAware.super.setPassParentEnvs(passParentEnvs);
 	}
 
 	public enum TestType

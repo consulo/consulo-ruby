@@ -17,29 +17,36 @@
 package org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript;
 
 import java.io.File;
+import java.util.List;
 
-import consulo.execution.configuration.RunConfiguration;
+import consulo.execution.configuration.LegacyRunConfigurationConverter;
+import consulo.execution.configuration.ProgramParametersAware;
+import consulo.execution.configuration.RunConfigurationOptions;
 import consulo.execution.configuration.RunProfileState;
-import consulo.execution.configuration.ui.SettingsEditor;
+import consulo.execution.configuration.fragment.ProgramParametersFragmentState;
+import consulo.execution.configuration.fragment.RunConfigurationFragment;
 import consulo.execution.executor.Executor;
 import consulo.execution.runner.ExecutionEnvironment;
 import consulo.process.ExecutionException;
 import consulo.project.Project;
-import consulo.util.xml.serializer.InvalidDataException;
-import org.jdom.Element;
+import consulo.util.lang.StringUtil;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.AbstractRubyRunConfiguration;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyArgumentsFragment;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyLegacyRunConfigurationState;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyModuleFragment;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationUtil;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubySdkFragment;
 import consulo.execution.configuration.ConfigurationFactory;
-import consulo.util.xml.serializer.WriteExternalException;
 
-public class RubyRunConfiguration extends AbstractRubyRunConfiguration implements RubyRunConfigurationParams
+public class RubyRunConfiguration extends AbstractRubyRunConfiguration implements RubyRunConfigurationParams, ProgramParametersAware
 {
-	private String myScriptPath = TextUtil.EMPTY_STRING;
-	private String myScriptArgs = TextUtil.EMPTY_STRING;
+	public static final String RUBY_RUN_CONFIG_SETTINGS_ID = "RUBY_RUN_CONFIG";
+
+	private static final String SCRIPT_PATH = "SCRIPT_PATH";
+	private static final String SCRIPT_ARGS = "SCRIPT_ARGS";
 
 	public RubyRunConfiguration(final Project project, final ConfigurationFactory factory, final String name)
 	{
@@ -47,27 +54,68 @@ public class RubyRunConfiguration extends AbstractRubyRunConfiguration implement
 	}
 
 	@Override
-	protected RubyRunConfiguration createInstance()
+	protected Class<? extends RunConfigurationOptions> getOptionsClass()
 	{
-		return new RubyRunConfiguration(getProject(), getFactory(), getName());
+		return RubyRunConfigurationOptions.class;
+	}
+
+	@Override
+	public RubyRunConfigurationOptions getOptions()
+	{
+		return (RubyRunConfigurationOptions) super.getOptions();
+	}
+
+	@Override
+	protected void convertLegacyState(LegacyRunConfigurationConverter converter)
+	{
+		super.convertLegacyState(converter);
+
+		RubyLegacyRunConfigurationState state = RubyLegacyRunConfigurationState.read(converter, getLegacySettingsId());
+		RubyRunConfigurationOptions options = createLegacyOptions(state);
+		convertLegacyCommonState(converter, state, options);
+		options.setScriptPath(state.get(SCRIPT_PATH));
+		converter.setOptions(options);
+
+		converter.addFragment(new ProgramParametersFragmentState(state.get(SCRIPT_ARGS)));
+	}
+
+	/**
+	 * The element name the old configuration wrote its options with.
+	 */
+	protected String getLegacySettingsId()
+	{
+		return RUBY_RUN_CONFIG_SETTINGS_ID;
+	}
+
+	/**
+	 * Creates the options of a converted old configuration, filled with the settings specific to this configuration type.
+	 */
+	protected RubyRunConfigurationOptions createLegacyOptions(RubyLegacyRunConfigurationState state)
+	{
+		return new RubyRunConfigurationOptions();
+	}
+
+	@Override
+	public List<RunConfigurationFragment<?>> createFragments()
+	{
+		return List.of(
+				new RubyScriptFragment<>(),
+				new RubyModuleFragment<>(),
+				new RubySdkFragment<>(),
+				new RubyArgumentsFragment<>()
+		);
 	}
 
 	@Override
 	public String getScriptPath()
 	{
-		return myScriptPath;
+		return StringUtil.notNullize(getOptions().getScriptPath());
 	}
 
 	@Override
 	public void setScriptPath(final String scriptPath)
 	{
-		myScriptPath = TextUtil.getAsNotNull(scriptPath);
-	}
-
-	@Override
-	public SettingsEditor<? extends RunConfiguration> getConfigurationEditor()
-	{
-		return new RubyRunConfigurationEditor(getProject(), this);
+		getOptions().setScriptPath(scriptPath);
 	}
 
 	@Nullable
@@ -118,25 +166,12 @@ public class RubyRunConfiguration extends AbstractRubyRunConfiguration implement
 	@Override
 	public String getScriptArgs()
 	{
-		return myScriptArgs;
+		return StringUtil.notNullize(getProgramParameters());
 	}
 
 	@Override
-	public void setScriptArgs(String myScriptArgs)
+	public void setScriptArgs(String scriptArgs)
 	{
-		this.myScriptArgs = TextUtil.getAsNotNull(myScriptArgs);
-	}
-
-
-	@Override
-	public void readExternal(Element element) throws InvalidDataException
-	{
-		RubyRunConfigurationExternalizer.getInstance().readExternal(this, element);
-	}
-
-	@Override
-	public void writeExternal(Element element) throws WriteExternalException
-	{
-		RubyRunConfigurationExternalizer.getInstance().writeExternal(this, element);
+		setProgramParameters(scriptArgs);
 	}
 }

@@ -21,14 +21,17 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.methods.RMetho
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.classes.RClass;
 
 import java.io.File;
+import java.util.List;
 
 import jakarta.annotation.Nonnull;
 
-import consulo.execution.configuration.ui.SettingsEditor;
+import consulo.execution.configuration.LegacyRunConfigurationConverter;
+import consulo.execution.configuration.RunConfigurationOptions;
+import consulo.execution.configuration.fragment.RunConfigurationFragment;
 import consulo.execution.executor.Executor;
 import consulo.project.Project;
 import consulo.util.lang.Pair;
-import org.jdom.Element;
+import consulo.util.lang.StringUtil;
 
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.RBundle;
@@ -44,15 +47,16 @@ import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
 import org.jetbrains.plugins.ruby.ruby.presentation.RMethodPresentationUtil;
 import org.jetbrains.plugins.ruby.ruby.presentation.RPresentationConstants;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.AbstractRubyRunConfiguration;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyArgumentsFragment;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyLegacyRunConfigurationState;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyModuleFragment;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationUtil;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubySdkFragment;
 import consulo.process.ExecutionException;
 import consulo.execution.configuration.ConfigurationFactory;
-import consulo.execution.configuration.RunConfiguration;
 import consulo.execution.configuration.RunProfileState;
 import consulo.execution.runner.ExecutionEnvironment;
-import consulo.util.xml.serializer.InvalidDataException;
 import consulo.util.lang.ref.Ref;
-import consulo.util.xml.serializer.WriteExternalException;
 import consulo.virtualFileSystem.LocalFileSystem;
 import consulo.virtualFileSystem.VirtualFile;
 import consulo.language.psi.scope.GlobalSearchScope;
@@ -69,13 +73,11 @@ public class RTestsRunConfiguration extends AbstractRubyRunConfiguration impleme
 
 	private static final RMethod[] EMPTY_VIRT_METHODS = new RMethod[0];
 
-	private String myTestsFolderPath = TextUtil.EMPTY_STRING;
-	private String myTestScriptPath = TextUtil.EMPTY_STRING;
-	private String myTestClassName = TextUtil.EMPTY_STRING;
-	private String myTestFileMask = TextUtil.EMPTY_STRING;
-	private String myTestMethodName = TextUtil.EMPTY_STRING;
-	private TestType myTestType = TestType.TEST_SCRIPT;
-	private boolean myInheritanceCheckDisabled; //false
+	public static final String RTEST_RUN_CONFIG_SETTINGS_ID = "RTEST_RUN_CONFIG_SETTINGS_ID";
+
+	private static final String TEST_CLASS_NAME = "TEST_CLASS_NAME";
+	private static final String TEST_METHOD_NAME = "TEST_METHOD_NAME";
+	private static final String INHERITANCE_CHECK_DISABLED = "INHERITANCE_CHECK_DISABLED";
 
 	public RTestsRunConfiguration(final Project project, final ConfigurationFactory factory, final String name)
 	{
@@ -85,16 +87,42 @@ public class RTestsRunConfiguration extends AbstractRubyRunConfiguration impleme
 	}
 
 	@Override
-	protected RTestsRunConfiguration createInstance()
+	protected Class<? extends RunConfigurationOptions> getOptionsClass()
 	{
-		return new RTestsRunConfiguration(getProject(), getFactory(), getName());
+		return RTestsRunConfigurationOptions.class;
 	}
 
+	@Override
+	public RTestsRunConfigurationOptions getOptions()
+	{
+		return (RTestsRunConfigurationOptions) super.getOptions();
+	}
 
 	@Override
-	public SettingsEditor<? extends RunConfiguration> getConfigurationEditor()
+	protected void convertLegacyState(LegacyRunConfigurationConverter converter)
 	{
-		return new RTestsRunConfigurationEditor(getProject(), this);
+		super.convertLegacyState(converter);
+
+		RubyLegacyRunConfigurationState state = RubyLegacyRunConfigurationState.read(converter, RTEST_RUN_CONFIG_SETTINGS_ID);
+		RTestsRunConfigurationOptions options = new RTestsRunConfigurationOptions();
+		convertLegacyCommonState(converter, state, options);
+		convertLegacyTestTargetState(state, options);
+		options.setTestClassName(state.get(TEST_CLASS_NAME));
+		options.setTestMethodName(state.get(TEST_METHOD_NAME));
+		options.setInheritanceCheckDisabled(state.getBoolean(INHERITANCE_CHECK_DISABLED));
+		converter.setOptions(options);
+	}
+
+	@Override
+	public List<RunConfigurationFragment<?>> createFragments()
+	{
+		return List.of(
+				new RTestsTargetFragment(),
+				new RubyModuleFragment<>(),
+				new RubySdkFragment<>(),
+				new RubyArgumentsFragment<>(),
+				new RTestsInheritanceCheckFragment()
+		);
 	}
 
 	@Override
@@ -272,37 +300,37 @@ public class RTestsRunConfiguration extends AbstractRubyRunConfiguration impleme
 	@Override
 	public String getTestsFolderPath()
 	{
-		return myTestsFolderPath;
+		return StringUtil.notNullize(getOptions().getTestsFolderPath());
 	}
 
 	@Override
 	public String getTestScriptPath()
 	{
-		return myTestScriptPath;
+		return StringUtil.notNullize(getOptions().getTestScriptPath());
 	}
 
 	@Override
 	public String getTestMethodName()
 	{
-		return myTestMethodName;
+		return StringUtil.notNullize(getOptions().getTestMethodName());
 	}
 
 	@Override
 	public TestType getTestType()
 	{
-		return myTestType;
+		return parseTestType(getOptions().getTestType());
 	}
 
 	@Override
 	public String getTestQualifiedClassName()
 	{
-		return myTestClassName;
+		return StringUtil.notNullize(getOptions().getTestClassName());
 	}
 
 	@Override
 	public String getTestFileMask()
 	{
-		return myTestFileMask;
+		return StringUtil.notNullize(getOptions().getTestFileMask());
 	}
 
 	/**
@@ -313,60 +341,48 @@ public class RTestsRunConfiguration extends AbstractRubyRunConfiguration impleme
 	@Override
 	public void setTestsFolderPath(final String path)
 	{
-		myTestsFolderPath = TextUtil.getAsNotNull(path);
+		getOptions().setTestsFolderPath(path);
 	}
 
 	@Override
 	public void setTestScriptPath(final String pathOrMask)
 	{
-		myTestScriptPath = TextUtil.getAsNotNull(pathOrMask);
+		getOptions().setTestScriptPath(pathOrMask);
 	}
 
 	@Override
 	public void setTestMethodName(@Nullable final String name)
 	{
-		myTestMethodName = TextUtil.getAsNotNull(name);
+		getOptions().setTestMethodName(name);
 	}
 
 	@Override
 	public void setTestType(@Nonnull final TestType testType)
 	{
-		myTestType = testType;
+		getOptions().setTestType(testType.name());
 	}
 
 	@Override
 	public void setTestQualifiedClassName(@Nullable final String testClassName)
 	{
-		myTestClassName = TextUtil.getAsNotNull(testClassName);
+		getOptions().setTestClassName(testClassName);
 	}
 
 	@Override
 	public void setTestFileMask(final String testFileMask)
 	{
-		myTestFileMask = TextUtil.getAsNotNull(testFileMask);
-	}
-
-	@Override
-	public void readExternal(Element element) throws InvalidDataException
-	{
-		RTestRunConfigurationExternalizer.getInstance().readExternal(this, element);
-	}
-
-	@Override
-	public void writeExternal(Element element) throws WriteExternalException
-	{
-		RTestRunConfigurationExternalizer.getInstance().writeExternal(this, element);
+		getOptions().setTestFileMask(testFileMask);
 	}
 
 	@Override
 	public boolean isInheritanceCheckDisabled()
 	{
-		return myInheritanceCheckDisabled;
+		return getOptions().isInheritanceCheckDisabled();
 	}
 
 	@Override
 	public void setInheritanceCheckDisabled(final boolean disabled)
 	{
-		myInheritanceCheckDisabled = disabled;
+		getOptions().setInheritanceCheckDisabled(disabled);
 	}
 }

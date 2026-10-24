@@ -18,32 +18,34 @@ package org.jetbrains.plugins.ruby.rails.run.configuration.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.List;
 
 import jakarta.annotation.Nonnull;
 
 import consulo.execution.executor.Executor;
 import consulo.execution.runner.ExecutionEnvironment;
 import jakarta.annotation.Nullable;
-import org.jdom.Element;
 
 import org.jetbrains.plugins.ruby.RBundle;
 import org.jetbrains.plugins.ruby.rails.RailsConstants;
 import org.jetbrains.plugins.ruby.rails.RailsUtil;
 import org.jetbrains.plugins.ruby.rails.facet.RailsFacetUtil;
 import org.jetbrains.plugins.ruby.rails.run.configuration.RailsRunConfigurationUtil;
-import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyArgumentsFragment;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyLegacyRunConfigurationState;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationUtil;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubySdkFragment;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunConfiguration;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunConfigurationOptions;
 import org.jetbrains.plugins.ruby.support.utils.VirtualFileUtil;
 import consulo.process.ExecutionException;
 import consulo.execution.configuration.ConfigurationFactory;
-import consulo.execution.configuration.RunConfiguration;
+import consulo.execution.configuration.RunConfigurationOptions;
 import consulo.execution.configuration.RunProfileState;
+import consulo.execution.configuration.fragment.RunConfigurationFragment;
 import consulo.module.Module;
-import consulo.execution.configuration.ui.SettingsEditor;
 import consulo.project.Project;
-import consulo.util.xml.serializer.InvalidDataException;
-import consulo.util.xml.serializer.WriteExternalException;
+import consulo.util.lang.StringUtil;
 import consulo.util.lang.text.StringTokenizer;
 
 /**
@@ -55,14 +57,13 @@ import consulo.util.lang.text.StringTokenizer;
 public class RailsServerRunConfiguration extends RubyRunConfiguration implements RailsServerRunConfigurationParams
 {
 	public static final String DEFAULT_SERVER = "Default";
+	public static final String RAILS_SERVER_CONFIG_SETTINGS_ID = "RAILS_SERVER_CONFIG_SETTINGS_ID";
 
-	private boolean myChoosePortManually;
-	@Nonnull
-	private String myServerType = DEFAULT_SERVER;
-	@Nonnull
-	private RailsEnvironmentType myEnvironmentType = RailsEnvironmentType.DEVELOPMENT;
-	private String myPort = TextUtil.EMPTY_STRING;
-	private String myIP = TextUtil.EMPTY_STRING;
+	private static final String CHOOSE_MANUALLY = "CHOOSE_MANUALLY";
+	private static final String PORT = "PORT";
+	private static final String IP = "IP";
+	private static final String SERVER_TYPE = "RAILS_SERVER_TYPE";
+	private static final String ENVIRONMENT_TYPE = "ENVIRONMENT_TYPE";
 
 	public RailsServerRunConfiguration(final Project project, final ConfigurationFactory factory, final String name)
 	{
@@ -70,9 +71,44 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 	}
 
 	@Override
-	protected RailsServerRunConfiguration createInstance()
+	protected Class<? extends RunConfigurationOptions> getOptionsClass()
 	{
-		return new RailsServerRunConfiguration(getProject(), getFactory(), getName());
+		return RailsServerRunConfigurationOptions.class;
+	}
+
+	@Override
+	public RailsServerRunConfigurationOptions getOptions()
+	{
+		return (RailsServerRunConfigurationOptions) super.getOptions();
+	}
+
+	@Override
+	protected String getLegacySettingsId()
+	{
+		return RAILS_SERVER_CONFIG_SETTINGS_ID;
+	}
+
+	@Override
+	protected RubyRunConfigurationOptions createLegacyOptions(RubyLegacyRunConfigurationState state)
+	{
+		RailsServerRunConfigurationOptions options = new RailsServerRunConfigurationOptions();
+		String port = state.get(PORT);
+		options.setPort(port == null ? "0" : port);
+		options.setIpAddress(state.get(IP));
+		options.setChoosePortManually(state.getBoolean(CHOOSE_MANUALLY));
+		options.setServerType(state.get(SERVER_TYPE));
+		options.setEnvironmentType(state.get(ENVIRONMENT_TYPE));
+		return options;
+	}
+
+	@Override
+	public List<RunConfigurationFragment<?>> createFragments()
+	{
+		return List.of(
+				new RailsServerFragment(),
+				new RubySdkFragment<>(),
+				new RubyArgumentsFragment<>()
+		);
 	}
 
 	/**
@@ -103,51 +139,51 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 	@Override
 	public boolean isChoosePortManually()
 	{
-		return myChoosePortManually;
+		return getOptions().isChoosePortManually();
 	}
 
 	@Override
 	public void setChoosePortManually(final boolean choosePortManually)
 	{
-		myChoosePortManually = choosePortManually;
+		getOptions().setChoosePortManually(choosePortManually);
 	}
 
 	@Override
 	public String getPort()
 	{
-		return myPort;
+		return StringUtil.notNullize(getOptions().getPort());
 	}
 
 	@Override
 	public void setPort(final String port)
 	{
-		myPort = (port == null ? "0" : port);
+		getOptions().setPort(port == null ? "0" : port);
 	}
 
 	@Override
 	@Nonnull
 	public String getIPAddr()
 	{
-		return myIP;
+		return StringUtil.notNullize(getOptions().getIpAddress());
 	}
 
 	@Override
 	@Nonnull
 	public String getServerType()
 	{
-		return myServerType;
+		return StringUtil.notNullize(getOptions().getServerType(), DEFAULT_SERVER);
 	}
 
 	@Override
 	public void setServerType(@Nonnull final String type)
 	{
-		myServerType = type;
+		getOptions().setServerType(type);
 	}
 
 	@Override
 	public void setIPAddr(final String ip)
 	{
-		myIP = TextUtil.getAsNotNull(ip);
+		getOptions().setIpAddress(ip);
 	}
 
 	/**
@@ -160,24 +196,6 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 	public Module[] getModules()
 	{
 		return RailsUtil.getAllModulesWithRailsSupport(getProject());
-	}
-
-	@Override
-	public SettingsEditor<? extends RunConfiguration> getConfigurationEditor()
-	{
-		return new RailsServerRunConfigurationEditor(getProject(), this);
-	}
-
-	@Override
-	public void readExternal(Element element) throws InvalidDataException
-	{
-		RailsServerRunConfigurationExternalizer.getInstance().readExternal(this, element);
-	}
-
-	@Override
-	public void writeExternal(Element element) throws WriteExternalException
-	{
-		RailsServerRunConfigurationExternalizer.getInstance().writeExternal(this, element);
 	}
 
 	@Nullable
@@ -284,13 +302,24 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 	@Override
 	public RailsEnvironmentType getRailsEnvironmentType()
 	{
-		return myEnvironmentType;
+		String environmentType = getOptions().getEnvironmentType();
+		if(environmentType != null)
+		{
+			for(RailsEnvironmentType type : RailsEnvironmentType.values())
+			{
+				if(type.name().equals(environmentType))
+				{
+					return type;
+				}
+			}
+		}
+		return RailsEnvironmentType.DEVELOPMENT;
 	}
 
 	@Override
 	public void setRailsEnvironmentType(final RailsEnvironmentType railsEnvironmentType)
 	{
-		myEnvironmentType = railsEnvironmentType;
+		getOptions().setEnvironmentType(railsEnvironmentType.name());
 	}
 
 	public enum RailsEnvironmentType

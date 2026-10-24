@@ -154,6 +154,20 @@ run.configuration.server.panel.port:
   text: Port
 run.configuration.messages.none:
   text: '[none]'
+run.configuration.fragment.script:
+  text: Script
+run.configuration.fragment.test:
+  text: Test
+run.configuration.fragment.spec:
+  text: Spec
+run.configuration.fragment.custom.spec.runner:
+  text: Custom spec runner
+run.configuration.fragment.coloured.output:
+  text: Coloured output
+run.configuration.fragment.run.specs.separately:
+  text: Run specs separately
+run.configuration.fragment.ignore.testcase.inheritance:
+  text: Disable Test::Unit::TestCase inheritance check
 rspec.run.configuration.type.name:
   text: RSpec
 rspec.run.configuration.type.description:

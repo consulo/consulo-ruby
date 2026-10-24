@@ -17,39 +17,23 @@ package org.jetbrains.plugins.ruby.ruby.run.confuguration.tests;
 
 import consulo.disposer.Disposable;
 import consulo.localize.LocalizeValue;
-import consulo.module.Module;
 import consulo.project.Project;
 import consulo.ruby.api.localize.RubyApiLocalize;
-import consulo.ui.CheckBox;
 import consulo.ui.Label;
 import consulo.ui.TextBox;
 import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.util.FormBuilder;
 import consulo.util.lang.StringUtil;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.AbstractRubyRunConfiguration.TestType;
+import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationFragmentUtil;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
-/**
- * @author VISTALL
- * @since 2026-09-30
- */
-public class RTestsRunConfigurationLayout extends AbstractRTestsRunConfigurationLayout<RTestsRunConfiguration> {
-    private final TextBox myClassBox;
-    private final TextBox myMethodBox;
-    private final CheckBox myInheritanceCheckDisabledBox;
-
-    private @Nullable Label myClassLabel;
-    private @Nullable Label myMethodLabel;
-
-    @RequiredUIAccess
-    public RTestsRunConfigurationLayout(Project project, Disposable uiDisposable, Module[] modules) {
-        super(project, uiDisposable, modules);
-
-        myClassBox = TextBox.create();
-        myMethodBox = TextBox.create();
-        myInheritanceCheckDisabledBox = CheckBox.create(RubyApiLocalize.runConfigurationTestIgnoreTestcaseInheritance());
+public class RTestsTargetFragment extends AbstractRTestsTargetFragment<RTestsRunConfiguration> {
+    @Override
+    public LocalizeValue getName() {
+        return RubyApiLocalize.runConfigurationFragmentTest();
     }
 
     @Override
@@ -94,47 +78,57 @@ public class RTestsRunConfigurationLayout extends AbstractRTestsRunConfiguration
 
     @RequiredUIAccess
     @Override
-    protected void addBefore(FormBuilder builder) {
-        super.addBefore(builder);
-
-        myClassLabel = addRow(builder, RubyApiLocalize.runConfigurationTestsMessagesClassName(), myClassBox);
-        myMethodLabel = addRow(builder, RubyApiLocalize.runConfigurationTestsMessagesMethodName(), myMethodBox);
+    protected TargetEditor createTargetEditor(Project project, Disposable parent) {
+        return new TestCaseTargetEditor(project, parent);
     }
 
-    @RequiredUIAccess
-    @Override
-    protected void addBottom(FormBuilder builder) {
-        builder.addBottom(myInheritanceCheckDisabledBox);
-    }
+    private class TestCaseTargetEditor extends TargetEditor {
+        private final TextBox myClassBox;
+        private final TextBox myMethodBox;
 
-    @RequiredUIAccess
-    @Override
-    protected void updateTestType(TestType testType) {
-        super.updateTestType(testType);
+        private @Nullable Label myClassLabel;
+        private @Nullable Label myMethodLabel;
 
-        boolean testClass = testType == TestType.TEST_CLASS || testType == TestType.TEST_METHOD;
-        setRowVisible(myClassLabel, myClassBox, testClass);
-        setRowVisible(myMethodLabel, myMethodBox, testType == TestType.TEST_METHOD);
-        myInheritanceCheckDisabledBox.setVisible(testClass);
-    }
+        @RequiredUIAccess
+        private TestCaseTargetEditor(Project project, Disposable parent) {
+            super(project, parent);
 
-    @RequiredUIAccess
-    @Override
-    public void reset(RTestsRunConfiguration configuration) {
-        super.reset(configuration);
+            myClassBox = TextBox.create();
+            myMethodBox = TextBox.create();
+        }
 
-        myClassBox.setValue(StringUtil.notNullize(configuration.getTestQualifiedClassName()));
-        myMethodBox.setValue(StringUtil.notNullize(configuration.getTestMethodName()));
-        myInheritanceCheckDisabledBox.setValue(configuration.isInheritanceCheckDisabled());
-    }
+        @RequiredUIAccess
+        @Override
+        protected void addExtraRows(FormBuilder builder) {
+            myClassLabel = RubyRunConfigurationFragmentUtil.addRow(builder, RubyApiLocalize.runConfigurationTestsMessagesClassName(), myClassBox);
+            myMethodLabel = RubyRunConfigurationFragmentUtil.addRow(builder, RubyApiLocalize.runConfigurationTestsMessagesMethodName(), myMethodBox);
+        }
 
-    @RequiredUIAccess
-    @Override
-    public void apply(RTestsRunConfiguration configuration) {
-        super.apply(configuration);
+        @RequiredUIAccess
+        @Override
+        protected void updateTestType(TestType testType) {
+            super.updateTestType(testType);
 
-        configuration.setTestQualifiedClassName(getText(myClassBox));
-        configuration.setTestMethodName(getText(myMethodBox));
-        configuration.setInheritanceCheckDisabled(myInheritanceCheckDisabledBox.getValueOrError());
+            setRowVisible(myClassLabel, myClassBox, testType == TestType.TEST_CLASS || testType == TestType.TEST_METHOD);
+            setRowVisible(myMethodLabel, myMethodBox, testType == TestType.TEST_METHOD);
+        }
+
+        @RequiredUIAccess
+        @Override
+        public void reset(RTestsRunConfiguration target) {
+            myClassBox.setValue(StringUtil.notNullize(target.getTestQualifiedClassName()));
+            myMethodBox.setValue(StringUtil.notNullize(target.getTestMethodName()));
+
+            super.reset(target);
+        }
+
+        @RequiredUIAccess
+        @Override
+        public void apply(RTestsRunConfiguration target) {
+            super.apply(target);
+
+            target.setTestQualifiedClassName(RubyRunConfigurationFragmentUtil.getText(myClassBox));
+            target.setTestMethodName(RubyRunConfigurationFragmentUtil.getText(myMethodBox));
+        }
     }
 }
