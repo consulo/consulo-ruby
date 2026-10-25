@@ -39,8 +39,8 @@ import org.jetbrains.plugins.ruby.support.ui.checkableDir.CheckableDirectoriesCo
 import org.jetbrains.plugins.ruby.support.ui.checkableDir.CheckableDirectoryItem;
 import consulo.fileChooser.FileChooserDescriptor;
 import consulo.fileChooser.FileChooserDescriptorFactory;
-import consulo.fileChooser.FileChooserDialog;
 import consulo.fileChooser.FileChooserFactory;
+import consulo.util.io.FileUtil;
 
 /**
  * Created by IntelliJ IDEA.
@@ -80,15 +80,15 @@ class SettingsPane implements CheckBoxListListener
 				dirChooser.setShowFileSystemRoots(true);
 				dirChooser.setHideIgnored(true);
 				dirChooser.setTitle("Select directory");
-				FileChooserDialog chooser = FileChooserFactory.getInstance().createFileChooser(dirChooser, docPanel.getProject(),  mainPanel);
-				VirtualFile[] files = chooser.choose(null);
-				if(files.length > 0)
-				{
-					// adding to the end
-					CheckableDirectoryItem docDirectory = new CheckableDirectoryItem(files[0].getPath(), true);
-					myDocDirs.addCheckableDir(docDirectory);
-					myListModel.addElement(docDirectory.createCheckBox());
-				}
+				FileChooserFactory.getInstance().newBuilder(dirChooser).project(docPanel.getProject()).parent(mainPanel).showSingle().whenComplete((path, error) -> {
+					if(path != null)
+					{
+						// adding to the end
+						CheckableDirectoryItem docDirectory = new CheckableDirectoryItem(FileUtil.toSystemIndependentName(path.toString()), true);
+						myDocDirs.addCheckableDir(docDirectory);
+						myListModel.addElement(docDirectory.createCheckBox());
+					}
+				});
 			}
 		});
 

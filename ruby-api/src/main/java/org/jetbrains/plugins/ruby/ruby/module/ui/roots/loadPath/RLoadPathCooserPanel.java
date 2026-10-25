@@ -24,6 +24,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
+import java.nio.file.Path;
 
 import jakarta.annotation.Nonnull;
 
@@ -35,7 +36,6 @@ import org.jetbrains.plugins.ruby.ruby.ri.ui.CheckBoxListListener;
 import org.jetbrains.plugins.ruby.support.ui.checkableDir.CheckableDirectoriesContainer;
 import org.jetbrains.plugins.ruby.support.ui.checkableDir.CheckableDirectoryItem;
 import consulo.fileChooser.FileChooserDescriptor;
-import consulo.fileChooser.FileChooserDialog;
 import consulo.module.Module;
 import consulo.ui.ex.awt.Messages;
 import consulo.util.io.FileUtil;
@@ -80,23 +80,27 @@ public class RLoadPathCooserPanel implements CheckBoxListListener
 				dirChooser.setHideIgnored(true);
 				dirChooser.setTitle(RBundle.message("module.settings.dialog.load.path.filechooser.add.dialog.title"));
 				// dirChooser.setContextModule(module);
-				FileChooserDialog chooser = FileChooserFactory.getInstance().createFileChooser(dirChooser, module.getProject(),  myContentPane);
-				VirtualFile[] files = chooser.choose(null);
-				for(VirtualFile file : files)
-				{
-					// adding to the end
-					CheckableDirectoryItem docDirectory = new CheckableDirectoryItem(file.getPath(), true);
-					if(myDirsContainer.addCheckableDir(docDirectory))
+				FileChooserFactory.getInstance().newBuilder(dirChooser).project(module.getProject()).parent(myContentPane).showMultiple().whenComplete((paths, error) -> {
+					if(paths == null)
 					{
-						myListModel.addElement(docDirectory.createCheckBox());
+						return;
 					}
-					else
+					for(Path chosen : paths)
 					{
-						final String msg = RBundle.message("module.settings.dialog.load.path.error.add.message");
-						final String title = RBundle.message("module.settings.dialog.load.path.error.add.title");
-						Messages.showErrorDialog(module.getProject(), msg, title);
+						// adding to the end
+						CheckableDirectoryItem docDirectory = new CheckableDirectoryItem(FileUtil.toSystemIndependentName(chosen.toString()), true);
+						if(myDirsContainer.addCheckableDir(docDirectory))
+						{
+							myListModel.addElement(docDirectory.createCheckBox());
+						}
+						else
+						{
+							final String msg = RBundle.message("module.settings.dialog.load.path.error.add.message");
+							final String title = RBundle.message("module.settings.dialog.load.path.error.add.title");
+							Messages.showErrorDialog(module.getProject(), msg, title);
+						}
 					}
-				}
+				});
 			}
 		});
 

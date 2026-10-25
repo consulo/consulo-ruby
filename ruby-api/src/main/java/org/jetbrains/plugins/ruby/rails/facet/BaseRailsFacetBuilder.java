@@ -25,7 +25,6 @@ import consulo.content.ContentIterator;
 import consulo.content.bundle.Sdk;
 import consulo.fileChooser.FileChooserDescriptor;
 import consulo.fileChooser.FileChooserDescriptorFactory;
-import consulo.fileChooser.FileChooserDialog;
 import consulo.fileChooser.FileChooserFactory;
 import consulo.logging.Logger;
 import consulo.module.Module;
@@ -40,6 +39,7 @@ import consulo.ui.ex.awt.Messages;
 import consulo.util.lang.function.ThrowableRunnable;
 import consulo.util.lang.ref.Ref;
 import consulo.virtualFileSystem.VirtualFile;
+import consulo.util.io.FileUtil;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.RBundle;
@@ -129,11 +129,11 @@ public class BaseRailsFacetBuilder
 		final Ref<String> railsFacetHomePathRef = new Ref<String>();
 
 		final ModuleRootManager rootManager = ModuleRootManager.getInstance(uncommitedModule);
-		final String railsApplicationRootPath;
 		if(conf.getNullableRailsApplicationRootPath() != null)
 		{
-			railsApplicationRootPath = conf.getNullableRailsApplicationRootPath();
+			String railsApplicationRootPath = conf.getNullableRailsApplicationRootPath();
 			assert railsApplicationRootPath != null; //only for inspection
+			setupGreenhornFacet(railsFacet, rootManager, railsApplicationRootPath, sdk);
 		}
 		else
 		{
@@ -152,7 +152,7 @@ public class BaseRailsFacetBuilder
 			//setup rails application home path
 			if(railsFacetHomePathRef.get() != null)
 			{
-				railsApplicationRootPath = railsFacetHomePathRef.get();
+				setupGreenhornFacet(railsFacet, rootManager, railsFacetHomePathRef.get(), sdk);
 			}
 			else
 			{
@@ -166,12 +166,19 @@ public class BaseRailsFacetBuilder
 				desc.setRoots(VirtualFileUtil.findFileByLocalPath(defaultAppHome));
 				desc.setIsTreeRootVisible(true);
 				//Folder Chooser Dialog
-				final FileChooserDialog dialog = FileChooserFactory.getInstance().createFileChooser(desc, project, null);
-				final VirtualFile[] selectedFiles = dialog.choose(null, project);
-
-				railsApplicationRootPath = selectedFiles.length > 0 ? selectedFiles[0].getPath() : defaultAppHome;
+				FileChooserFactory.getInstance().newBuilder(desc).project(project).showSingle().whenComplete((path, error) -> {
+					String railsApplicationRootPath = path != null ? FileUtil.toSystemIndependentName(path.toString()) : defaultAppHome;
+					setupGreenhornFacet(railsFacet, rootManager, railsApplicationRootPath, sdk);
+				});
 			}
 		}
+	}
+
+	private static void setupGreenhornFacet(BaseRailsFacet railsFacet, ModuleRootManager rootManager, String railsApplicationRootPath, @Nullable Sdk sdk)
+	{
+		final BaseRailsFacetConfigurationLowLevel conf = (BaseRailsFacetConfigurationLowLevel) railsFacet.getConfiguration();
+		final Module uncommitedModule = railsFacet.getModule();
+
 		// inits railsAppRootPath, SDK, etc
 		initGreenhornFacet(railsFacet, rootManager.getModifiableModel(), railsApplicationRootPath, sdk);
 
