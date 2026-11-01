@@ -110,7 +110,7 @@ public interface TokenBNF
 
 	final TokenSet tSTARS = TokenSet.create(RubyTokenTypes.tSTAR, RubyTokenTypes.tMULT);
 
-	final TokenSet tDOT_OR_COLON = TokenSet.create(RubyTokenTypes.tCOLON2, RubyTokenTypes.tDOT);
+	final TokenSet tDOT_OR_COLON = TokenSet.create(RubyTokenTypes.tCOLON2, RubyTokenTypes.tDOT, RubyTokenTypes.tANDDOT);
 
 	final TokenSet tCODE_BLOCK_BEG_TOKENS = TokenSet.orSet(TokenSet.create(RubyTokenTypes.kDO), tLBRACES);
 
@@ -181,7 +181,10 @@ public interface TokenBNF
 					RubyTokenTypes.tTILDE,            //    ~
 					RubyTokenTypes.tAREF,             //    []
 					RubyTokenTypes.tASET,             //    []=
-					RubyTokenTypes.tSHELL             //    `
+					RubyTokenTypes.tSHELL,            //    `
+					RubyTokenTypes.tNEQ,              //    !=
+					RubyTokenTypes.tNMATCH,           //    !~
+					RubyTokenTypes.tEXCLAMATION       //    !
 			));
 
 	final TokenSet tUNARY_OPS = TokenSet.create(RubyTokenTypes.tEXCLAMATION, RubyTokenTypes.kNOT, RubyTokenTypes.tUMINUS, RubyTokenTypes.tUPLUS, RubyTokenTypes.tTILDE);
@@ -289,7 +292,12 @@ public interface TokenBNF
 
 					RubyTokenTypes.tQUESTION, RubyTokenTypes.tCOLON,
 
-					RubyTokenTypes.kENSURE));
+					RubyTokenTypes.kENSURE, RubyTokenTypes.kIN,
+
+					RubyTokenTypes.tLABEL, RubyTokenTypes.tLAMBDA, RubyTokenTypes.tDSTAR,
+
+					// prefix splat and block pass: *(a + b), &(proc)
+					RubyTokenTypes.tSTAR, RubyTokenTypes.tAMPER));
 
 	// WE interpret EOL as whiteSpace after these tokens
 	public final TokenSet tIGNORE_EOL_TOKENS = TokenSet.orSet(tEXPR_BEG_AFTER_TOKENS, tBINARY_OPS, tDOT_OR_COLON);

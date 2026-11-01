@@ -1,0 +1,24 @@
+def foo(&block)
+end
+-------
+Ruby file
+  Compound statement
+    Ruby:METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Function name
+          PsiElement(identifier)('foo')
+      PsiElement(()('(')
+      Function argument list
+        Block argument
+          PsiElement(a&)('&')
+          Identifier
+            PsiElement(identifier)('block')
+      PsiElement())(')')
+      PsiWhiteSpace('\n')
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

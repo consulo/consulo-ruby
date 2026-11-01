@@ -44,6 +44,84 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- a parser that stops consuming input loops forever -->
+                    <forkedProcessTimeoutInSeconds>180</forkedProcessTimeoutInSeconds>
+                    <!-- the light test application replaces these services; the real ones would bind twice -->
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExclude>consulo:consulo-application-content-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-application-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-build-ui-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-code-editor-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-color-scheme-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-component-store-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-diff-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-execution-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-execution-test-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-file-editor-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-file-template-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-ide-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-language-code-style-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-language-editor-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-localization-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-module-content-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-module-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-project-content-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-project-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-project-ui-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-remote-server-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-ui-ex-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-virtual-file-status-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo:consulo-virtual-file-system-impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-gson.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-guava.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-jam.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.analysis.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.compiler.artifact.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.compiler.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.coverage.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.coverage.rt</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.debugger.image.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.debugger.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.diagram.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.execution.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.indexing.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.intelliLang</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.language.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.manifest</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.profiler.attach</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.profiler.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.profiler.jfr</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.properties.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.regexp.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.rt.common</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-java.spellchecker</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.java-jvm.bytecode.viewer</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-actionscript.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-base.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-browser.debugger.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-cdt.debugger.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-debugger.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-ecmascript4.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-ecmascript.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-inspections</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-intentions</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-javascript16.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-javascript17.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-javascript18.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-regexp.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-typescript.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:consulo.javascript-web.browser.impl</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:org.jetbrains.plugins.yaml</classpathDependencyExclude>
+                        <classpathDependencyExclude>consulo.plugin:org.jetbrains.plugins.yaml.json.schema</classpathDependencyExclude>
+                    </classpathDependencyExcludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <compilerArguments>
@@ -70,15 +148,16 @@
     </build>
 
     <dependencies>
+        <!-- first: its test plugin manager must win the service lookup over the container one -->
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>org.jetbrains.plugins.yaml</artifactId>
+            <groupId>consulo</groupId>
+            <artifactId>consulo-test-junit-impl</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>consulo.java</artifactId>
+            <artifactId>org.jetbrains.plugins.yaml</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -478,6 +557,11 @@
             <groupId>consulo.internal</groupId>
             <artifactId>forms_rt</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

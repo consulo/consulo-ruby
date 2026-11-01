@@ -51,6 +51,19 @@ public class AREF_ARGS implements RubyTokenTypes
 	*/
 	public static void parse(final RBuilder builder)
 	{
+		final boolean doBlockAllowed = builder.setDoBlockAllowed(true);
+		try
+		{
+			doParse(builder);
+		}
+		finally
+		{
+			builder.setDoBlockAllowed(doBlockAllowed);
+		}
+	}
+
+	private static void doParse(final RBuilder builder)
+	{
 		if(!builder.compare(BNF.tAREF_ARGS_FIRST_TOKENS))
 		{
 			return;
@@ -73,11 +86,6 @@ public class AREF_ARGS implements RubyTokenTypes
 			@Nonnull
 			public IElementType parse(final RBuilder builder)
 			{
-				if(starSeen.get())
-				{
-					return RubyElementTypes.EMPTY_INPUT;
-				}
-
 				if(builder.compare(tSTAR) && !assocSeen.get())
 				{
 					starSeen.set(true);
@@ -93,7 +101,7 @@ public class AREF_ARGS implements RubyTokenTypes
 					return result;
 				}
 
-				if(assocSeen.get() && result != RubyElementTypes.ASSOC)
+				if(assocSeen.get() && !ASSOC_OR_ARG.isAllowedAfterAssoc(result))
 				{
 					builder.error(ErrorMsg.expected(tASSOC));
 				}

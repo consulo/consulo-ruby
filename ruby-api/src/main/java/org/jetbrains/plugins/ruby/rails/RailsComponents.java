@@ -34,8 +34,6 @@ public interface RailsComponents
 	@NonNls
 	final String RAILS_PROJECT_LOADER = "RailsProjectLoader";
 	@NonNls
-	final String RAILS_PROJECT_VIEW_PANE = "RailsProjectViewPane";
-	@NonNls
 	final String RAILS_HIGHLIGHT_PASS_FACTORY = "RailsHighlighPassFactory";
 	@NonNls
 	final String RAILS_VIEW_FOLDERS_MANAGER = "RailsViewFoldersManager";

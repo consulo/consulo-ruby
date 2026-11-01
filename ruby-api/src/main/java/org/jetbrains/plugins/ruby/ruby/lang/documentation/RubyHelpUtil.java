@@ -16,11 +16,10 @@
 
 package org.jetbrains.plugins.ruby.ruby.lang.documentation;
 
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RStructuralElement;
 
-import com.intellij.java.language.JavaLanguage;
-import com.intellij.java.language.impl.codeInsight.javadoc.JavaDocUtil;
-import com.intellij.java.language.psi.PsiMethod;
 import consulo.language.ast.ASTNode;
 import consulo.language.editor.documentation.DocumentationManagerUtil;
 import consulo.language.editor.documentation.LanguageDocumentationProvider;
@@ -37,7 +36,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.RubyOverrideImplement
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Type;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Types;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.FileSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.lexer.RubyTokenTypes;
@@ -122,10 +121,10 @@ public class RubyHelpUtil implements MarkupConstants
 		{
 			return null;
 		}
-		if(Types.JAVA.contains(symbol.getType()))
+		if(Types.FOREIGN.contains(symbol.getType()))
 		{
-			//noinspection ConstantConditions
-			return LanguageDocumentationProvider.forLanguageComposite(JavaLanguage.INSTANCE).generateDoc(((JavaSymbol) symbol).getPsiElement(), null);
+			final PsiElement element = ((ForeignSymbol) symbol).getPsiElement();
+			return LanguageDocumentationProvider.forLanguageComposite(element.getLanguage()).generateDoc(element, null);
 		}
 		final StringBuilder builder = new StringBuilder();
 		final Project project = symbol.getProject();
@@ -214,8 +213,8 @@ public class RubyHelpUtil implements MarkupConstants
 				addLinksByElements(builder, project, elements, size);
 			}
 
-			// Adding info about implemented java methods
-			final List implemented = RubyOverrideImplementUtil.getImplementedJavaMethods(symbols);
+			// Adding info about implemented foreign methods
+			final List implemented = RubyOverrideImplementUtil.getImplementedForeignMethods(symbols);
 			final int implementedSize = implemented.size();
 			if(implementedSize > 0)
 			{
@@ -232,7 +231,7 @@ public class RubyHelpUtil implements MarkupConstants
 	}
 
 	/*
-	 * Adds links for elements(PsiMethods or Ruby elements) to builder
+	 * Adds links for elements(foreign methods or Ruby elements) to builder
 	 */
 	private static void addLinksByElements(@Nonnull final StringBuilder builder, @Nonnull final Project project, @Nonnull final List elements, final int size)
 	{
@@ -253,12 +252,15 @@ public class RubyHelpUtil implements MarkupConstants
 			}
 			else
 
-				// Pure Java method
-				if(element instanceof PsiMethod)
+				if(element instanceof PsiElement foreignElement)
 				{
-					psiElem = element;
-					label = ((PsiMethod) element).getContainingClass().getQualifiedName();
-					ref = JavaDocUtil.getReferenceText(project, (PsiMethod) element);
+					final RubyInteropProvider provider = RubyInterop.forElement(foreignElement);
+					if(provider != null)
+					{
+						psiElem = element;
+						label = provider.getContainingClassName(foreignElement);
+						ref = provider.getDocumentationReference(foreignElement);
+					}
 				}
 
 			if(psiElem != null && label != null && ref != null)

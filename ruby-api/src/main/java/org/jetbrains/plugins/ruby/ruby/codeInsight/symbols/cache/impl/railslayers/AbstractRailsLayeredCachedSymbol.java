@@ -35,9 +35,9 @@ abstract class AbstractRailsLayeredCachedSymbol extends AbstractLayeredCachedSym
 {
 	private final FileSymbolType myNextLayerType;
 
-	public AbstractRailsLayeredCachedSymbol(@Nonnull final FileSymbolType nextLayerType, @Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean jRubyEnabled)
+	public AbstractRailsLayeredCachedSymbol(@Nonnull final FileSymbolType nextLayerType, @Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean interopEnabled)
 	{
-		super(project, module, sdk, jRubyEnabled);
+		super(project, module, sdk, interopEnabled);
 		myNextLayerType = nextLayerType;
 	}
 
@@ -46,7 +46,7 @@ abstract class AbstractRailsLayeredCachedSymbol extends AbstractLayeredCachedSym
 	protected CachedSymbol getBaseSymbol()
 	{
 		final SymbolsCache cache = SymbolsCache.getInstance(myProject);
-		return cache.getCachedSymbol(myNextLayerType, myModule, mySdk, isJRubyEnabled);
+		return cache.getCachedSymbol(myNextLayerType, myModule, mySdk, isInteropEnabled);
 	}
 
 }

@@ -17,6 +17,11 @@
 package org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache;
 
 import consulo.annotation.component.ComponentScope;
+import consulo.application.Application;
+import consulo.application.ReadAction;
+import consulo.language.psi.PsiModificationTracker;
+import consulo.module.content.layer.event.ModuleRootEvent;
+import consulo.module.content.layer.event.ModuleRootListener;
 import consulo.annotation.component.ServiceAPI;
 import consulo.annotation.component.ServiceImpl;
 import consulo.application.progress.ProgressIndicator;
@@ -32,14 +37,14 @@ import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.jruby.JRubyUtil;
+import consulo.ruby.interop.RubyInterop;
 import org.jetbrains.plugins.ruby.rails.facet.RailsFacetUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.LastSymbolStorage;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache.impl.AbstractCachedSymbol;
 import org.jetbrains.plugins.ruby.support.utils.RModuleUtil;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by IntelliJ IDEA.
@@ -53,10 +58,12 @@ import java.util.Map;
 public class SymbolsCache implements Disposable {
 
     // Here we store info about modifiable symbols
-    private Map<CacheKey, SoftReference<CachedSymbol>> mySoftCache = new HashMap<CacheKey, SoftReference<CachedSymbol>>();
+    private final Map<CacheKey, SoftReference<CachedSymbol>> mySoftCache = new ConcurrentHashMap<>();
 
     // Here we store info about built-in symbols
-    private final Map<CacheKey, CachedSymbol> myBuiltInCache = new HashMap<CacheKey, CachedSymbol>();
+    private final Map<CacheKey, CachedSymbol> myBuiltInCache = new ConcurrentHashMap<>();
+    // the per file symbols are built from the PSI: any change makes them stale
+    private volatile long myPsiModificationCount = -1;
 
     private Project myProject;
 
@@ -69,6 +76,13 @@ public class SymbolsCache implements Disposable {
     @Inject
     public SymbolsCache(@Nonnull final Project project) {
         myProject = project;
+        // the SDK roots, the load path settings and the libraries are all in the roots
+        project.getMessageBus().connect(this).subscribe(ModuleRootListener.class, new ModuleRootListener() {
+            @Override
+            public void rootsChanged(ModuleRootEvent event) {
+                clearCaches();
+            }
+        });
     }
 
     public void clearCaches() {
@@ -101,22 +115,28 @@ public class SymbolsCache implements Disposable {
 
                 // Here we gather info about sdks and builin cache types required
                 for (Module module : modules) {
-                    final Sdk sdk = RModuleUtil.getModuleOrJRubyFacetSdk(module);
+                    final Sdk sdk = RModuleUtil.getModuleSdk(module);
                     if (sdk != null) {
-                        final boolean isJRubyEnabled = JRubyUtil.hasJRubySupport(module);
+                        final boolean isInteropEnabled = RubyInterop.isEnabled(module);
                         if (RailsFacetUtil.hasRailsSupport(module)) {
-                            SymbolCacheUtil.getFileSymbol(getBuiltInCachedSymbol(FileSymbolType.RAILS_BUILT_IN, sdk, isJRubyEnabled));
+                            SymbolCacheUtil.getFileSymbol(getBuiltInCachedSymbol(FileSymbolType.RAILS_BUILT_IN, sdk, isInteropEnabled));
                         }
                         else if (RModuleUtil.hasRubySupport(module)) {
-                            SymbolCacheUtil.getFileSymbol(getBuiltInCachedSymbol(FileSymbolType.BUILT_IN, sdk, isJRubyEnabled));
+                            SymbolCacheUtil.getFileSymbol(getBuiltInCachedSymbol(FileSymbolType.BUILT_IN, sdk, isInteropEnabled));
                         }
                     }
                 }
 
             }
         };
-        final String title = RBundle.message("cache.symbol.building.builtins.title");
-        ProgressManager.getInstance().runProcessWithProgressSynchronously(runnable, title, false, myProject);
+        // never a modal dialog: the startup activity is in the background already
+        final Runnable task = () -> ReadAction.run(runnable::run);
+        if (Application.get().isDispatchThread()) {
+            Application.get().executeOnPooledThread(task);
+        }
+        else {
+            task.run();
+        }
     }
 
     @Override
@@ -133,24 +153,29 @@ public class SymbolsCache implements Disposable {
      * @param url          Url for file
      * @param module       file module
      * @param sdk          sdk for file
-     * @param jrubyEnabled is JRuby Enabled
+     * @param interopEnabled is interop enabled
      * @return up2dated FileSymbol
      */
     @Nullable
-    public CachedSymbol getModifiableCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final String url, @Nullable final Module module, @Nullable final Sdk sdk, final boolean jrubyEnabled) {
-        final CacheKey key = new CacheKey(type, url, module, sdk, jrubyEnabled);
+    public CachedSymbol getModifiableCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final String url, @Nullable final Module module, @Nullable final Sdk sdk, final boolean interopEnabled) {
+        final long modificationCount = PsiModificationTracker.getInstance(myProject).getModificationCount();
+        if (modificationCount != myPsiModificationCount) {
+            myPsiModificationCount = modificationCount;
+            mySoftCache.clear();
+        }
+
+        final CacheKey key = new CacheKey(type, url, module, sdk, interopEnabled);
         SoftReference<CachedSymbol> reference = mySoftCache.get(key);
         CachedSymbol cachedSymbol = reference != null ? reference.get() : null;
         if (cachedSymbol != null) {
             return cachedSymbol;
         }
-        cachedSymbol = CachedSymbolFactory.createCachedSymbol(type, url, myProject, module, sdk, jrubyEnabled);
+        cachedSymbol = CachedSymbolFactory.createCachedSymbol(type, url, myProject, module, sdk, interopEnabled);
         if (cachedSymbol == null) {
             removeKey(key);
             return null;
         }
         ((AbstractCachedSymbol) cachedSymbol).setKey(key);
-        ((AbstractCachedSymbol) cachedSymbol).setMap(mySoftCache);
         reference = new SoftReference<CachedSymbol>(cachedSymbol);
         mySoftCache.put(key, reference);
         return cachedSymbol;
@@ -162,12 +187,12 @@ public class SymbolsCache implements Disposable {
      * @param type         Type
      * @param module       file module
      * @param sdk          sdk for file
-     * @param jrubyEnabled is JRuby Enabled
+     * @param interopEnabled is interop enabled
      * @return up2dated FileSymbol
      */
     @Nullable
-    public CachedSymbol getCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final Module module, @Nullable final Sdk sdk, final boolean jrubyEnabled) {
-        return getModifiableCachedSymbol(type, null, module, sdk, jrubyEnabled);
+    public CachedSymbol getCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final Module module, @Nullable final Sdk sdk, final boolean interopEnabled) {
+        return getModifiableCachedSymbol(type, null, module, sdk, interopEnabled);
     }
 
     /**
@@ -175,21 +200,21 @@ public class SymbolsCache implements Disposable {
      *
      * @param type         Type of builtin fileSymbol
      * @param sdk          sdk for filesymbol
-     * @param jrubyEnabled is JRuby Enabled
+     * @param interopEnabled is interop enabled
      * @return up2dated FileSymbol
      */
     @Nullable
-    public CachedSymbol getBuiltInCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final Sdk sdk, final boolean jrubyEnabled) {
-        final String cacheKeyUrl = SymbolCacheUtil.getStubUrlByType(type, sdk, jrubyEnabled);
+    public CachedSymbol getBuiltInCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final Sdk sdk, final boolean interopEnabled) {
+        final String cacheKeyUrl = SymbolCacheUtil.getStubUrlByType(type, sdk, interopEnabled);
         if (cacheKeyUrl == null) {
             return null;
         }
 
-        final CacheKey key = new CacheKey(type, cacheKeyUrl, null, sdk, jrubyEnabled);
+        final CacheKey key = new CacheKey(type, cacheKeyUrl, null, sdk, interopEnabled);
         CachedSymbol builtInCachedSymbol = myBuiltInCache.get(key);
 
         if (builtInCachedSymbol == null) {
-            builtInCachedSymbol = CachedSymbolFactory.createCachedSymbol(type, cacheKeyUrl, myProject, null, sdk, jrubyEnabled);
+            builtInCachedSymbol = CachedSymbolFactory.createCachedSymbol(type, cacheKeyUrl, myProject, null, sdk, interopEnabled);
             if (builtInCachedSymbol == null) {
                 return null;
             }

@@ -1,0 +1,15 @@
+puts/foo/
+------
+Ruby file
+  Compound statement
+    Math binary expression
+      Math binary expression
+        Identifier
+          PsiElement(identifier)('puts')
+        PsiElement(/)('/')
+        Identifier
+          PsiElement(identifier)('foo')
+      PsiElement(/)('/')
+      PsiErrorElement:Expected: expression
+        <empty list>
+  PsiWhiteSpace('\n')

@@ -25,7 +25,13 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.PresentableElementType;
  * @author: Roman Chernyatchik
  * @date: Aug 18, 2007
  */
-public class IXMLRHTMLElementType extends IXmlElementType implements PresentableElementType, IRHTMLElement
+import consulo.language.ast.ASTNode;
+import consulo.language.psi.PsiElement;
+import consulo.language.ast.IElementTypeAsPsiFactory;
+import jakarta.annotation.Nonnull;
+import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.parsing.parser.RHTMLPsiCreator;
+
+public class IXMLRHTMLElementType extends IXmlElementType implements PresentableElementType, IRHTMLElement, IElementTypeAsPsiFactory
 {
 	private String myName;
 
@@ -45,5 +51,13 @@ public class IXMLRHTMLElementType extends IXmlElementType implements Presentable
 	public String getPresentableName()
 	{
 		return myName;
+	}
+
+	@Nonnull
+	@Override
+	public PsiElement createElement(@Nonnull ASTNode node)
+	{
+		// an XML element type, but the PSI is the template's
+		return RHTMLPsiCreator.createElement(node);
 	}
 }

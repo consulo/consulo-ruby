@@ -22,8 +22,6 @@ import consulo.annotation.component.ExtensionImpl;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import consulo.execution.RunManager;
-import consulo.execution.RunnerAndConfigurationSettings;
 import consulo.execution.action.Location;
 import consulo.execution.configuration.ConfigurationFactory;
 import consulo.execution.configuration.ConfigurationTypeUtil;
@@ -51,13 +49,16 @@ import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunConfi
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.tests.RTestUnitUtil;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.tests.RTestsRunConfiguration;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.tests.RTestsRunConfigurationFactory;
-import org.jetbrains.plugins.ruby.support.utils.RModuleUtil;
 import org.jetbrains.plugins.ruby.support.utils.RubyVirtualFileScanner;
 import consulo.execution.configuration.ConfigurationType;
 import consulo.execution.configuration.RunConfiguration;
 import consulo.module.Module;
 import consulo.project.Project;
 import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.util.PsiTreeUtil;
+import org.jetbrains.plugins.ruby.ruby.lang.psi.iterators.RBlockCall;
+import java.util.Objects;
+import consulo.module.content.ProjectRootManager;
 import consulo.language.psi.PsiElement;
 import consulo.ui.image.Image;
 
@@ -119,208 +120,161 @@ public class RubyRunConfigurationType implements ConfigurationType
 		};
 	}
 
-	//@Override
+	/**
+	 * Finds what a run started at the location runs: a script, a test file, class, method or folder.
+	 */
 	@Nullable
-	public RunnerAndConfigurationSettings createConfigurationByLocation(final @Nonnull Location location)
+	public RubyRunTarget findTarget(final @Nonnull Location location)
 	{
-		// if not in psi file
 		final PsiElement locationElement = location.getPsiElement();
 		final RFile containingFile = RubyPsiUtil.getRFile(locationElement);
 		final OpenFileDescriptor openedFile = location.getOpenFileDescriptor();
 
 		if(containingFile == null || openedFile == null)
 		{
-			// if in psi directory
-			if(locationElement instanceof PsiDirectory)
+			if(locationElement instanceof PsiDirectory directory && RTestUnitUtil.containsTestFiles(directory.getVirtualFile()))
 			{
-				return createRunAllUnitTestsInFolderConf((PsiDirectory) locationElement);
+				final VirtualFile folder = directory.getVirtualFile();
+				return new RubyRunTarget(FileSemantic.TEST_UNIT_TEST, folder, locationElement, RBundle.message("run.configuration.test.default.name", folder.getName()), TestType.ALL_IN_FOLDER, null, null);
 			}
 			return null;
 		}
 
-		final Project project = location.getProject();
 		final VirtualFile file = openedFile.getFile();
-		if(!RubyVirtualFileScanner.isRubyFile(file))
+		// a Rakefile declares tasks, running it as a script does nothing
+		if(!RubyVirtualFileScanner.isRubyFile(file) || RSpecUtil.isRSpecTestFile(file) || isRakeFile(file))
 		{
 			return null;
 		}
-		// Should we create unit test configuration
-		FileSemantic fileSemantic = FileSemantic.RUBY_SCRIPT;
-		// Unit test configuration type
-		TestType testType = null;
-		// Configuration name
-		String name = file.getNameWithoutExtension();
-		String className = null;
-		String methodName = null;
 
-		// analyze selected element
 		final RPsiElement rPsiElement = RubyPsiUtil.getCoveringRPsiElement(locationElement);
-		if(rPsiElement != null)
+		final RContainer currentContainer = rPsiElement == null ? null : rPsiElement instanceof RContainer container ? container : rPsiElement.getParentContainer();
+		final String fileName = file.getNameWithoutExtension();
+
+		if(currentContainer instanceof RClass || currentContainer instanceof RMethod)
 		{
-			final PsiFile psiFile = rPsiElement.getContainingFile();
-			if(psiFile != null && RSpecUtil.isRSpecTestFile(psiFile.getVirtualFile()))
+			// a nested class runs with the class around it
+			final RClass upperClass = RubyPsiUtil.getContainingUpperRClass(currentContainer);
+			final Ref<FileSymbol> fSWrapper = new Ref<FileSymbol>();
+			if(upperClass == null || !RTestUnitUtil.isClassUnitTestCase(upperClass, fSWrapper))
 			{
-				//if file is RSpec test file we should suggest to run it with rspec,
-				//even if default test frame work is test_unit
-				return null;
+				return new RubyRunTarget(FileSemantic.RUBY_SCRIPT, file, containingFile, fileName, null, null, null);
 			}
 
+			final String className = RClassPresentationUtil.getRuntimeQualifiedNameInRubyTestMode(upperClass, fSWrapper);
+			if(currentContainer instanceof RMethod method && upperClass == method.getParentContainer() && RTestUnitUtil.hasValidTestNameAndNotSingleton(method))
+			{
+				return new RubyRunTarget(FileSemantic.TEST_UNIT_TEST, file, method, method.getName(), TestType.TEST_METHOD, className, method.getName());
+			}
 
-			final RContainer currentContainer = (rPsiElement instanceof RContainer) ? (RContainer) rPsiElement : rPsiElement.getParentContainer();
-
-			//In Ruby Class
 			if(currentContainer instanceof RClass)
 			{
-				// "currentContainer" maybe nested class so we should
-				// find the upper class contained him
-				final RClass upperClass = RubyPsiUtil.getContainingUpperRClass(currentContainer);
-				final Ref<FileSymbol> fSWrapper = new consulo.util.lang.ref.Ref<FileSymbol>();
-				fileSemantic = (upperClass != null && RTestUnitUtil.isClassUnitTestCase(upperClass, fSWrapper)) ? FileSemantic.TEST_UNIT_TEST : FileSemantic.RUBY_SCRIPT;
-
-				if(fileSemantic == FileSemantic.TEST_UNIT_TEST)
+				final RBlockCall blockCall = PsiTreeUtil.getParentOfType(locationElement, RBlockCall.class, false, RClass.class);
+				final String methodName = RTestUnitUtil.getDeclarativeTestMethodName(locationElement, upperClass);
+				if(methodName != null && blockCall != null)
 				{
-					name = className = RClassPresentationUtil.getRuntimeQualifiedNameInRubyTestMode(upperClass, fSWrapper);
-
-					testType = calculateTestTypeForClass(upperClass);
-					if(testType == null)
-					{
-						return null;
-					}
+					return new RubyRunTarget(FileSemantic.TEST_UNIT_TEST, file, blockCall, className + "." + methodName, TestType.TEST_METHOD, className, methodName);
 				}
-				//In Ruby Method
 			}
-			else if(currentContainer instanceof RMethod)
+
+			final TestType testType = calculateTestTypeForClass(upperClass);
+			if(testType == null)
 			{
-				final RClass upperClass = RubyPsiUtil.getContainingUpperRClass(currentContainer);
-
-				final consulo.util.lang.ref.Ref<FileSymbol> fSWrapper = new consulo.util.lang.ref.Ref<FileSymbol>();
-				fileSemantic = (upperClass != null && RTestUnitUtil.isClassUnitTestCase(upperClass, fSWrapper)) ? FileSemantic.TEST_UNIT_TEST : FileSemantic.RUBY_SCRIPT;
-
-				methodName = currentContainer.getName();
-
-				if(fileSemantic == FileSemantic.TEST_UNIT_TEST)
-				{
-					className = RClassPresentationUtil.getRuntimeQualifiedNameInRubyTestMode(upperClass, fSWrapper);
-					// Test Method is TestCase method which name starts with prefix "test"
-					if(upperClass == currentContainer.getParentContainer() && RTestUnitUtil.hasValidTestNameAndNotSingleton((RMethod) currentContainer))
-					{
-						testType = AbstractRubyRunConfiguration.TestType.TEST_METHOD;
-						name = methodName;
-					}
-					else
-					{
-						//Create configuration for class
-						name = className;
-
-						testType = calculateTestTypeForClass(upperClass);
-						if(testType == null)
-						{
-							return null;
-						}
-					}
-				}
-				//In Ruby File
+				return null;
 			}
-			else if(currentContainer instanceof RFile)
-			{
-				fileSemantic = (RTestUnitUtil.checkForAnotherTestCases(null, (RFile) currentContainer)) ? FileSemantic.TEST_UNIT_TEST : FileSemantic.RUBY_SCRIPT;
-				testType = AbstractRubyRunConfiguration.TestType.TEST_SCRIPT;
-			}
+			return new RubyRunTarget(FileSemantic.TEST_UNIT_TEST, file, upperClass, testType == TestType.TEST_SCRIPT ? fileName : className, testType, className, null);
 		}
 
-		// create corresponding configuration
-		final RubyRunConfigurationFactory factory;
-		switch(fileSemantic)
-		{
-			case TEST_UNIT_TEST:
-				factory = myUnitTestsFactory;
-				break;
-			case RUBY_SCRIPT:
-				factory = myAppFactory;
-				break;
-			default:
-				factory = null;
-		}
+		final boolean tests = currentContainer instanceof RFile rFile && RTestUnitUtil.checkForAnotherTestCases(null, rFile);
+		return tests
+			? new RubyRunTarget(FileSemantic.TEST_UNIT_TEST, file, containingFile, fileName, TestType.TEST_SCRIPT, null, null)
+			: new RubyRunTarget(FileSemantic.RUBY_SCRIPT, file, containingFile, fileName, null, null, null);
+	}
 
-		final RunnerAndConfigurationSettings settings = RunManager.getInstance(project).createRunConfiguration(name, factory);
+	private static boolean isRakeFile(final VirtualFile file)
+	{
+		return "Rakefile".equals(file.getName()) || "rakefile".equals(file.getName()) || "rake".equals(file.getExtension());
+	}
 
-		final AbstractRubyRunConfiguration templateConfiguration = (AbstractRubyRunConfiguration) settings.getConfiguration();
-
-		// setupFileCache not default configuration settings
-		// module
-		final Module module = RubyRunConfigurationUtil.getCorrespondingModule(project, file, templateConfiguration);
+	/**
+	 * Fills a configuration of the target's kind, keeping the defaults of its template.
+	 *
+	 * @return false if no module of the project contains the target
+	 */
+	public boolean setupConfiguration(final @Nonnull AbstractRubyRunConfiguration configuration, final @Nonnull RubyRunTarget target)
+	{
+		final Project project = configuration.getProject();
+		final VirtualFile file = target.getFile();
+		final Module module = RubyRunConfigurationUtil.getCorrespondingModule(project, file, configuration);
 		if(module == null)
-		{ //TODO module == null => choose first module's some sdk!
-			return null;
-		}
-
-		//ignores template configuration's defaults
-		templateConfiguration.setModule(module);
-
-		//keeps template configuration's defaults
-		if(TextUtil.isEmptyOrWhitespaces(templateConfiguration.getWorkingDirectory()))
 		{
-			// sets working dir
-			final VirtualFile parentDir = file.getParent();
-			final String dir = parentDir != null ? parentDir.getPath() : RailsFacetUtil.getRailsAppHomeDirPath(module);
-			templateConfiguration.setWorkingDirectory(dir);
+			return false;
+		}
+		configuration.setName(target.getName());
+		configuration.setModule(module);
+
+		if(TextUtil.isEmptyOrWhitespaces(configuration.getWorkingDirectory()))
+		{
+			// tests run in the project root, where Rails finds its configuration and fixtures
+			final VirtualFile contentRoot = ProjectRootManager.getInstance(project).getFileIndex().getContentRootForFile(file);
+			final VirtualFile directory = target.getSemantic() == FileSemantic.TEST_UNIT_TEST && contentRoot != null ? contentRoot : file.isDirectory() ? file : file.getParent();
+			configuration.setWorkingDirectory(directory != null ? directory.getPath() : RailsFacetUtil.getRailsAppHomeDirPath(module));
 		}
 
-		//specific settings
-		switch(fileSemantic)
+		if(target.getSemantic() == FileSemantic.RUBY_SCRIPT)
 		{
-			case RUBY_SCRIPT:
-				//settings for ruby scripts
-				initScriptConfiguration(file, templateConfiguration);
-				break;
-			case TEST_UNIT_TEST:
-				// settings for unit tests
-				initUnitTestConfiguration(file, testType, className, methodName, templateConfiguration);
-				break;
+			((RubyRunConfiguration) configuration).setScriptPath(file.getPath());
 		}
-		return settings;
+		else if(target.getTestType() == TestType.ALL_IN_FOLDER)
+		{
+			final RTestsRunConfiguration conf = (RTestsRunConfiguration) configuration;
+			conf.setTestType(TestType.ALL_IN_FOLDER);
+			conf.setTestsFolderPath(file.getPath());
+			if(TextUtil.isEmptyOrWhitespaces(conf.getTestFileMask()))
+			{
+				conf.setTestFileMask(RTestsRunConfiguration.DEFAULT_TESTS_SEARCH_MASK);
+			}
+		}
+		else
+		{
+			initUnitTestConfiguration(file, target.getTestType(), target.getClassName(), target.getMethodName(), configuration);
+		}
+		return true;
 	}
 
-	//@Override
-	public boolean isConfigurationByLocation(RunConfiguration runConfiguration, Location location)
+	/**
+	 * @return true if the configuration runs the target
+	 */
+	public boolean isConfigurationOfTarget(final @Nonnull RunConfiguration configuration, final @Nonnull RubyRunTarget target)
 	{
-		return RubyRunConfigurationUtil.isConfigurationByElement(runConfiguration, location.getPsiElement());
+		final String path = target.getFile().getPath();
+		if(target.getSemantic() == FileSemantic.RUBY_SCRIPT)
+		{
+			return configuration instanceof RubyRunConfiguration script && path.equals(script.getScriptPath());
+		}
+		if(!(configuration instanceof RTestsRunConfiguration conf) || conf.getTestType() != target.getTestType())
+		{
+			return false;
+		}
+		return switch(target.getTestType())
+		{
+			case ALL_IN_FOLDER -> path.equals(conf.getTestsFolderPath());
+			case TEST_SCRIPT -> path.equals(conf.getTestScriptPath());
+			case TEST_CLASS -> path.equals(conf.getTestScriptPath()) && Objects.equals(target.getClassName(), conf.getTestQualifiedClassName());
+			case TEST_METHOD -> path.equals(conf.getTestScriptPath()) && Objects.equals(target.getClassName(), conf.getTestQualifiedClassName()) && Objects.equals(target.getMethodName(), conf.getTestMethodName());
+		};
 	}
 
-	private RunnerAndConfigurationSettings createRunAllUnitTestsInFolderConf(@Nonnull final PsiDirectory psiDirectory)
+	public RubyRunConfigurationFactory getScriptFactory()
 	{
-		final Project project = psiDirectory.getProject();
-		final VirtualFile folder = psiDirectory.getVirtualFile();
-
-		final String name = RBundle.message("run.configuration.test.default.name", folder.getName());
-
-		final RunnerAndConfigurationSettings settings = RunManager.getInstance(project).createRunConfiguration(name, myUnitTestsFactory);
-
-		final RTestsRunConfiguration conf = (RTestsRunConfiguration) settings.getConfiguration();
-		// module
-		final Module module = RubyRunConfigurationUtil.getCorrespondingModule(project, folder, conf);
-		if(module == null || !RModuleUtil.hasRubySupport(module) || !RModuleUtil.getRubySupportSettings(module).shouldUseTestUnitTestFramework())
-		{
-			return null;
-		}
-
-		//ignores template's defaults
-		conf.setModule(module);
-		conf.setTestType(AbstractRubyRunConfiguration.TestType.ALL_IN_FOLDER);
-		conf.setTestsFolderPath(folder.getPath());
-
-		//keeps template's defaults
-		if(TextUtil.isEmptyOrWhitespaces(conf.getTestFileMask()))
-		{
-			conf.setTestFileMask(RTestsRunConfiguration.DEFAULT_TESTS_SEARCH_MASK);
-		}
-		if(TextUtil.isEmptyOrWhitespaces(conf.getWorkingDirectory()))
-		{
-			conf.setWorkingDirectory(folder.getPath());
-		}
-
-		return settings;
+		return myAppFactory;
 	}
+
+	public RTestsRunConfigurationFactory getTestsFactory()
+	{
+		return myUnitTestsFactory;
+	}
+
 
 	/**
 	 * If our Unit TestCase is single testcase in script, we can run whole script
@@ -341,14 +295,6 @@ public class RubyRunConfigurationType implements ConfigurationType
 			testType = null;
 		}
 		return testType;
-	}
-
-	private void initScriptConfiguration(final VirtualFile file, final AbstractRubyRunConfiguration configuration)
-	{
-		final RubyRunConfiguration conf = (RubyRunConfiguration) configuration;
-
-		// setting script
-		conf.setScriptPath(file.getPath());
 	}
 
 	private void initUnitTestConfiguration(final VirtualFile file, final TestType testType, @Nullable final String className, @Nullable final String methodName, final AbstractRubyRunConfiguration configuration)

@@ -90,9 +90,7 @@ public class RHTMLFileViewProvider extends MultiplePsiFilesPerDocumentFileViewPr
 	{
 		if(lang == RubyLanguage.INSTANCE)
 		{
-			RHTMLRubyFileImpl ruby = new RHTMLRubyFileImpl(this);
-			ruby.setOriginalFile(getPsi(eRubyLanguage.INSTANCE));
-			return ruby;
+			return new RHTMLRubyFileImpl(this);
 		}
 		else if(lang == HTMLLanguage.INSTANCE)
 		{

@@ -71,5 +71,5 @@ public interface RFile extends RFieldConstantContainer, RGlobalVarHolder, PsiFil
 	@Nullable
 	public FileSymbol getFileSymbol();
 
-	public boolean isJRubyEnabled();
+	public boolean isInteropEnabled();
 }

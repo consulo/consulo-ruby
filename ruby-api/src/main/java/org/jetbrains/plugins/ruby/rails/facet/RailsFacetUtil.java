@@ -22,7 +22,6 @@ import consulo.virtualFileSystem.VirtualFile;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.rails.facet.configuration.BaseRailsFacetConfiguration;
 import org.jetbrains.plugins.ruby.rails.facet.configuration.StandardRailsPaths;
-import org.jetbrains.plugins.ruby.rails.facet.versions.BaseRailsFacet;
 import org.jetbrains.plugins.ruby.support.utils.IdeaInternalUtil;
 import org.jetbrains.plugins.ruby.support.utils.VirtualFileUtil;
 import consulo.module.Module;
@@ -42,7 +41,7 @@ public class RailsFacetUtil
 	 */
 	public static boolean hasRailsSupport(@Nullable final Module module)
 	{
-		return module != null && BaseRailsFacet.getInstance(module) != null;
+		return RailsModuleSupport.isEnabled(module);
 	}
 
 	/**
@@ -66,12 +65,8 @@ public class RailsFacetUtil
 	@Nullable
 	public static StandardRailsPaths getRailsAppPaths(@Nonnull final Module module)
 	{
-		final BaseRailsFacet baseRailsFacet = BaseRailsFacet.getInstance(module);
-		if(baseRailsFacet == null)
-		{
-			return null;
-		}
-		return baseRailsFacet.getConfiguration().getPaths();
+		final BaseRailsFacetConfiguration configuration = RailsModuleSupport.getConfiguration(module);
+		return configuration == null ? null : configuration.getPaths();
 	}
 
 	/**
@@ -116,12 +111,7 @@ public class RailsFacetUtil
 	@Nullable
 	public static BaseRailsFacetConfiguration getRailsFacetConfiguration(@Nonnull final Module module)
 	{
-		final BaseRailsFacet railsFacet = BaseRailsFacet.getInstance(module);
-		if(railsFacet != null)
-		{
-			return railsFacet.getConfiguration();
-		}
-		return null;
+		return RailsModuleSupport.getConfiguration(module);
 	}
 
 	/**

@@ -50,6 +50,20 @@ public class CALL_ARGS implements RubyTokenTypes
 	@Nonnull
 	public static IElementType parse(final RBuilder builder)
 	{
+		final boolean doBlockAllowed = builder.setDoBlockAllowed(false);
+		try
+		{
+			return doParse(builder);
+		}
+		finally
+		{
+			builder.setDoBlockAllowed(doBlockAllowed);
+		}
+	}
+
+	@Nonnull
+	private static IElementType doParse(final RBuilder builder)
+	{
 		if(!builder.compare(BNF.tCALL_ARG_FIRST_TOKEN))
 		{
 			return RubyElementTypes.EMPTY_INPUT;
@@ -84,10 +98,15 @@ public class CALL_ARGS implements RubyTokenTypes
 					return parseBlockToArg(builder);
 				}
 
-				if(builder.compare(tSTAR) && !starSeen.get())
+				if(builder.compare(tSTAR))
 				{
 					starSeen.set(true);
 					return parseArrayToArguments(builder);
+				}
+
+				if(isArgumentsForwarding(builder))
+				{
+					return parseArgumentsForwarding(builder);
 				}
 
 				IElementType result = ASSOC_OR_ARG.parse(builder);
@@ -97,7 +116,7 @@ public class CALL_ARGS implements RubyTokenTypes
 					return result;
 				}
 
-				if(assocSeen.get() && result != RubyElementTypes.ASSOC)
+				if(assocSeen.get() && !ASSOC_OR_ARG.isAllowedAfterAssoc(result))
 				{
 					builder.error(ErrorMsg.expected(tASSOC));
 				}
@@ -144,10 +163,47 @@ public class CALL_ARGS implements RubyTokenTypes
 	{
 		RMarker marker = builder.mark();
 		builder.match(tSTAR);
-		if(ARG.parse(builder) == RubyElementTypes.EMPTY_INPUT)
+		// a bare '*' forwards the anonymous rest parameter
+		ARG.parse(builder);
+		marker.done(RubyElementTypes.ARRAY_TO_ARGS);
+		return RubyElementTypes.ARRAY_TO_ARGS;
+	}
+
+	/**
+	 * Parsing **ARG - hash to keyword arguments, a bare '**' forwards the anonymous keyword rest parameter
+	 *
+	 * @param builder Current builder
+	 * @return result of parsing
+	 */
+	public static IElementType parseHashToArguments(final RBuilder builder)
+	{
+		RMarker marker = builder.mark();
+		builder.match(tDSTAR);
+		ARG.parse(builder);
+		marker.done(RubyElementTypes.ARRAY_TO_ARGS);
+		return RubyElementTypes.ARRAY_TO_ARGS;
+	}
+
+	/**
+	 * @return true if at {@code ...} that forwards all the arguments of the method
+	 */
+	public static boolean isArgumentsForwarding(final RBuilder builder)
+	{
+		if(!builder.compare(tDOT3))
 		{
-			builder.error(ErrorMsg.EXPRESSION_EXPECTED_MESSAGE);
+			return false;
 		}
+		RMarker marker = builder.mark();
+		builder.advanceLexer();
+		boolean result = builder.compare(tRPAREN);
+		marker.rollbackTo();
+		return result;
+	}
+
+	public static IElementType parseArgumentsForwarding(final RBuilder builder)
+	{
+		RMarker marker = builder.mark();
+		builder.match(tDOT3);
 		marker.done(RubyElementTypes.ARRAY_TO_ARGS);
 		return RubyElementTypes.ARRAY_TO_ARGS;
 	}
@@ -162,10 +218,8 @@ public class CALL_ARGS implements RubyTokenTypes
 	{
 		RMarker marker = builder.mark();
 		builder.match(tAMPER);
-		if(ARG.parse(builder) == RubyElementTypes.EMPTY_INPUT)
-		{
-			builder.error(ErrorMsg.EXPRESSION_EXPECTED_MESSAGE);
-		}
+		// a bare '&' forwards the anonymous block parameter
+		ARG.parse(builder);
 		marker.done(RubyElementTypes.BLOCK_TO_ARG);
 		return RubyElementTypes.BLOCK_TO_ARG;
 	}

@@ -16,6 +16,10 @@
 
 package org.jetbrains.plugins.ruby.ruby.presentation;
 
+import org.jetbrains.plugins.ruby.ruby.lang.psi.RStructuralElement;
+import org.jetbrains.plugins.ruby.ruby.cache.psi.StructureType;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.holders.RContainer;
 
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.methods.RMethod;
@@ -24,10 +28,6 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.variables.fields.RField;
 
 import org.jetbrains.plugins.ruby.ruby.lang.psi.variables.RConstant;
 
-import com.intellij.java.language.psi.PsiClass;
-import com.intellij.java.language.psi.PsiField;
-import com.intellij.java.language.psi.PsiJavaPackage;
-import com.intellij.java.language.psi.PsiMethod;
 import consulo.component.util.Iconable;
 import consulo.language.editor.completion.lookup.LookupValueWithPriority;
 import consulo.language.icon.IconDescriptorUpdaters;
@@ -37,10 +37,8 @@ import consulo.ui.image.Image;
 import org.jetbrains.plugins.ruby.RBundle;
 import org.jetbrains.plugins.ruby.ruby.RubyIcons;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.RAliasStatement;
-import org.jetbrains.plugins.ruby.ruby.cache.psi.RImportJavaClass;
-import org.jetbrains.plugins.ruby.ruby.cache.psi.RIncludeJavaClass;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.variables.RFieldAttr;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.JavaLookupItem;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.ForeignLookupItem;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.RubyLookupItem;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.RubyPsiLookupItem;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.RubySimpleLookupItem;
@@ -48,7 +46,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.LastSymbolStorage;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Type;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Types;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.FileSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.documentation.RubyHelpUtil;
@@ -98,37 +96,9 @@ public class SymbolPresentationUtil
 			return new RubySimpleLookupItem(name, null, LookupValueWithPriority.HIGHER, true, RubyIcons.RUBY_ATTR_NODE);
 		}
 
-		// JRuby symbols
-		if(type == Type.JAVA_CLASS)
+		if(Types.FOREIGN.contains(type))
 		{
-			final JavaSymbol javaSymbol = (JavaSymbol) symbol;
-			final PsiElement element = javaSymbol.getPsiElement();
-			assert element instanceof PsiClass;
-			return new JavaLookupItem(name, element);
-		}
-
-		if(type == Type.JAVA_PACKAGE)
-		{
-			final JavaSymbol javaSymbol = (JavaSymbol) symbol;
-			final PsiElement element = javaSymbol.getPsiElement();
-			assert element instanceof PsiJavaPackage;
-			return new JavaLookupItem(name, element);
-		}
-
-		if(type == Type.JAVA_METHOD)
-		{
-			final JavaSymbol javaSymbol = (JavaSymbol) symbol;
-			final PsiElement element = javaSymbol.getPsiElement();
-			assert element instanceof PsiMethod;
-			return new JavaLookupItem(name, element);
-		}
-
-		if(type == Type.JAVA_FIELD)
-		{
-			final JavaSymbol javaSymbol = (JavaSymbol) symbol;
-			final PsiElement element = javaSymbol.getPsiElement();
-			assert element instanceof PsiField;
-			return new JavaLookupItem(name, element);
+			return new ForeignLookupItem(name, ((ForeignSymbol) symbol).getPsiElement());
 		}
 
 		// Ruby symbols
@@ -175,19 +145,14 @@ public class SymbolPresentationUtil
 		{
 			icon = RAliasPresentationUtil.getIcon();
 		}
+		else if(isForeignImport(lastPrototype))
+		{
+			bold = true;
+			icon = ForeignImportPresentationUtil.getIncludeIcon();
+		}
 		else if(lastPrototype instanceof RFieldAttr)
 		{
 			icon = RFieldAttrPresentationUtil.getAttrIcon(((RFieldAttr) lastPrototype).getFieldAttrType());
-		}
-		else if(lastPrototype instanceof RImportJavaClass)
-		{
-			bold = true;
-			icon = JavaClassPackagePresentationUtil.getIncludeIcon();
-		}
-		else if(lastPrototype instanceof RIncludeJavaClass)
-		{
-			bold = true;
-			icon = JavaClassPackagePresentationUtil.getIncludeIcon();
 		}
 		else if(type == Type.NOT_DEFINED)
 		{
@@ -239,23 +204,16 @@ public class SymbolPresentationUtil
 		{
 			return null;
 		}
-		// Handling Java symbols
-		if(Types.JAVA.contains(symbol.getType()))
+		if(Types.FOREIGN.contains(symbol.getType()))
 		{
-			final PsiElement element = ((JavaSymbol) symbol).getPsiElement();
-			if(element instanceof PsiClass)
+			final PsiElement element = ((ForeignSymbol) symbol).getPsiElement();
+			final RubyInteropProvider provider = RubyInterop.forElement(element);
+			if(provider == null)
 			{
-				return ((PsiClass) element).getQualifiedName();
+				return null;
 			}
-			if(element instanceof PsiMethod)
-			{
-				return name + " " + RBundle.message("in") + " " + ((PsiMethod) element).getContainingClass().getQualifiedName();
-			}
-			if(element instanceof PsiField)
-			{
-				return name + " " + RBundle.message("in") + " " + ((PsiField) element).getContainingClass().getQualifiedName();
-			}
-			return null;
+			final String containingClassName = provider.getContainingClassName(element);
+			return containingClassName != null ? name + " " + RBundle.message("in") + " " + containingClassName : provider.getQualifiedName(element);
 		}
 		final RPsiElement lastPrototype = symbol.getLastVirtualPrototype(fileSymbol);
 		if(lastPrototype instanceof RMethod)
@@ -290,4 +248,14 @@ public class SymbolPresentationUtil
 		return list;
 	}
 
+
+	private static boolean isForeignImport(@Nullable final RPsiElement element)
+	{
+		if(!(element instanceof RStructuralElement structuralElement))
+		{
+			return false;
+		}
+		final StructureType type = structuralElement.getType();
+		return type == StructureType.CALL_IMPORT || type == StructureType.CALL_INCLUDE_CLASS || type == StructureType.CALL_INCLUDE_PACKAGE;
+	}
 }

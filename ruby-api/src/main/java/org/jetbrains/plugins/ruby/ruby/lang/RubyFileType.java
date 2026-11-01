@@ -29,7 +29,12 @@ public class RubyFileType extends LanguageFileType
 {
 	public static final RubyFileType INSTANCE = new RubyFileType();
 
-	public static final String RUBY_EXTENTIONS = "rb;rbw;rake;";
+	public static final String RUBY_EXTENTIONS = "rb;rbw;rake;gemspec;ru;thor;jbuilder;podspec;";
+
+	public static final String[] RUBY_FILE_NAMES = {
+		"Gemfile", "gems.rb", "Rakefile", "rakefile", "Guardfile", "Capfile", "Vagrantfile", "Brewfile", "Podfile",
+		"Fastfile", "Appfile", "Thorfile", "Dangerfile", "Berksfile", "Steepfile", ".irbrc", ".pryrc"
+	};
 
 	private RubyFileType()
 	{
@@ -61,7 +66,7 @@ public class RubyFileType extends LanguageFileType
 	@Nonnull
 	public Image getIcon()
 	{
-		return RubyApiIconGroup.rubyRubyfile();
+		return RubyApiIconGroup.rubyRuby();
 	}
 }
 

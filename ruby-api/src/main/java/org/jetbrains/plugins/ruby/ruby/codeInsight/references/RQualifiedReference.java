@@ -16,7 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.references;
 
-import com.intellij.java.language.psi.PsiClass;
+import consulo.language.psi.PsiNamedElement;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import consulo.document.util.TextRange;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.ResolveResult;
@@ -220,13 +222,14 @@ public class RQualifiedReference implements RPsiPolyvariantReference
 		}
 	}
 
-	// IDEA calls bindToElement if we rename/move Java class
+	// called when a referenced foreign class is renamed or moved
 	@Override
 	public PsiElement bindToElement(@Nonnull PsiElement element) throws IncorrectOperationException
 	{
-		if(element instanceof PsiClass)
+		final RubyInteropProvider provider = RubyInterop.forElement(element);
+		if(provider != null && provider.isClass(element) && element instanceof PsiNamedElement namedElement)
 		{
-			return handleElementRename(((PsiClass) element).getName());
+			return handleElementRename(namedElement.getName());
 		}
 		return null;
 	}
@@ -345,7 +348,7 @@ public class RQualifiedReference implements RPsiPolyvariantReference
 			if(symbol != null)
 			{
 				final Type type = symbol.getType();
-				if(myType == RReference.Type.COLON_REF || myType == RReference.Type.DOT_REF && (Types.JAVA.contains(type) && type != Type.JAVA_FIELD || Types.METHODS_LIKE.contains(type)))
+				if(myType == RReference.Type.COLON_REF || myType == RReference.Type.DOT_REF && (Types.FOREIGN.contains(type) && type != Type.FOREIGN_FIELD || Types.METHODS_LIKE.contains(type)))
 				{
 					duckType.addMessage(message);
 				}

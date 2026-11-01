@@ -16,17 +16,14 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure;
 
-import com.intellij.java.language.psi.PsiClass;
 import consulo.application.progress.ProgressManager;
 import consulo.language.psi.PsiElement;
-import consulo.language.psi.PsiPackage;
+import consulo.ruby.interop.RubyInterop;
 import consulo.project.Project;
 import consulo.util.lang.Pair;
 import consulo.util.lang.ref.Ref;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.resolve.JavaResolveUtil;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.types.JRubyDuckTypeUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.*;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.data.Children;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.types.Context;
@@ -124,24 +121,16 @@ public class SymbolUtil
 		}
 		set.add(symbol);
 
-		// JRuby types handling
-		if(symbol.getType() == Type.JAVA_CLASS)
+		if(symbol.getType() == Type.FOREIGN_CLASS || symbol.getType() == Type.FOREIGN_PROXY_CLASS)
 		{
-			final PsiElement element = ((JavaSymbol) symbol).getPsiElement();
-			assert element instanceof PsiClass;
-			children.addChildren(JRubyDuckTypeUtil.getChildrenByJavaClass(fileSymbol, (PsiClass) element, context));
-			return;
-		}
-
-		if(symbol.getType() == Type.JAVA_PROXY_CLASS)
-		{
-			final PsiElement element = ((ProxyJavaSymbol) symbol).getPsiElement();
-			if(element instanceof PsiClass)
+			final Children foreignChildren = RubyInterop.getChildren(fileSymbol, symbol, context);
+			if(foreignChildren != null)
 			{
-				children.addChildren(JRubyDuckTypeUtil.getChildrenByJavaClass(fileSymbol, (PsiClass) element, context));
+				children.addChildren(foreignChildren);
 			}
 			return;
 		}
+
 		final Children symbolChildren = symbol.getChildren(fileSymbol);
 
 		// superclass handling
@@ -507,41 +496,18 @@ public class SymbolUtil
 			return symbol;
 		}
 
-		// try to find java class/package if needed for example "java.lang.String"
-		if(fileSymbol.isJRubyEnabled())
+		// try to find a foreign package or class, for example "java.lang.String"
+		if(fileSymbol.isInteropEnabled())
 		{
-			final JavaSymbol jRubySymbol = findJRubySymbol(anchor.getProject(), path);
-			if(jRubySymbol != null && jRubySymbol.getType() != Type.NOT_DEFINED)
+			final ForeignSymbol foreignSymbol = RubyInterop.findSymbol(anchor.getProject(), path);
+			if(foreignSymbol != null)
 			{
-				return jRubySymbol;
+				return foreignSymbol;
 			}
 		}
 
 		// try to find rails specific symbol
 		return path.size() == 1 ? RailsSymbolUtil.findRailsSpecificSymbol(fileSymbol, context, path.get(0), Context.ALL, typeSet) : null;
-	}
-
-	@Nullable
-	public static JavaSymbol findJRubySymbol(@Nonnull final Project project, @Nonnull final List<String> path)
-	{
-		final PsiElement element = JavaResolveUtil.getPackageOrClass(project, path);
-		if(element instanceof PsiPackage)
-		{
-			final String name = ((PsiPackage) element).getName();
-			if(name != null)
-			{
-				return new JavaSymbol(element, name, null, Type.JAVA_PACKAGE);
-			}
-		}
-		if(element instanceof PsiClass)
-		{
-			final String name = ((PsiClass) element).getName();
-			if(name != null)
-			{
-				return new JavaSymbol(element, name, null, Type.JAVA_CLASS);
-			}
-		}
-		return null;
 	}
 
 	public static boolean equalSymbols(Symbol s1, Symbol s2)

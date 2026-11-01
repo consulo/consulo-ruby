@@ -1,0 +1,5 @@
+<!-- Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license. -->
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="1.5" y="1.5" width="13" height="13" rx="6.5" fill="#253627" stroke="#57965C"/>
+<path d="M4.25781 4.5H5.54781L7.88781 9.855L8.01281 10.225L8.13281 9.855L10.4278 4.5H11.7378V11.5H10.7278V6.225L10.7328 6.03L8.39781 11.5H7.60281L5.25781 6.065L5.26281 6.225V11.5H4.25781V4.5Z" fill="#57965C"/>
+</svg>

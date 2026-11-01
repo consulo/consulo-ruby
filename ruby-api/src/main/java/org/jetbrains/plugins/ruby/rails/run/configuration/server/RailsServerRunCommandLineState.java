@@ -63,12 +63,16 @@ public class RailsServerRunCommandLineState extends RubyRunCommandLineState
 
 		//interpretator params
 		addParams(commandLine, myConfig.getRubyArgs());
-		//scrtipt/server
+		// bin/rails server
 		commandLine.addParameter(myConfig.getScriptPath());
+		commandLine.addParameter(RailsConstants.SERVER_COMMAND);
 
-		//server
+		// the server of the bundle (puma) unless one is chosen
 		final String server = config.getServerType();
-		commandLine.addParameter(server);
+		if(!server.isBlank() && !RailsServerRunConfiguration.DEFAULT_SERVER.equals(server))
+		{
+			commandLine.addParameters(RailsConstants.PARAM_SERVER_USING, server);
+		}
 
 		//server port
 		commandLine.addParameter(RailsConstants.PARAM_SERVER_PORT);

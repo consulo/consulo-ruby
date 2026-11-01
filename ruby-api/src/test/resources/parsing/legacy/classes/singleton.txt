@@ -1,0 +1,19 @@
+class << Obj
+end
+---------------
+Ruby file
+  Compound statement
+    Ruby:OBJECT_CLASS
+      PsiElement(class)('class')
+      PsiWhiteSpace(' ')
+      PsiElement(<<)('<<')
+      PsiWhiteSpace(' ')
+      Class object
+        Constant
+          PsiElement(constant)('Obj')
+      PsiElement(end of line)('\n')
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

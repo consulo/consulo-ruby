@@ -27,6 +27,7 @@ import consulo.project.Project;
 import consulo.ruby.api.localize.RubyApiLocalize;
 import consulo.ui.Component;
 import consulo.ui.Label;
+import consulo.ui.layout.HorizontalLayout;
 import consulo.ui.RadioGroup;
 import consulo.ui.TextBox;
 import consulo.ui.annotation.RequiredUIAccess;
@@ -87,17 +88,19 @@ public abstract class AbstractRTestsTargetFragment<T extends AbstractRubyRunConf
 
     protected class TargetEditor implements RunConfigurationFragmentEditor<T> {
         private final RadioGroup<TestType> myTestTypeGroup;
+        private final HorizontalLayout myTestTypeLayout;
         private final FileChooserTextBoxBuilder.Controller myFolderBox;
         private final TextBox myFileMaskBox;
         private final FileChooserTextBoxBuilder.Controller myScriptBox;
 
-        private @Nullable Label myFolderLabel;
-        private @Nullable Label myFileMaskLabel;
-        private @Nullable Label myScriptLabel;
+        private final Label myFolderLabel;
+        private final Label myFileMaskLabel;
+        private final Label myScriptLabel;
 
         @RequiredUIAccess
         protected TargetEditor(Project project, Disposable parent) {
             myTestTypeGroup = RadioGroup.create();
+            myTestTypeLayout = myTestTypeGroup.fillHorizontal(getTestTypes(), AbstractRTestsTargetFragment.this::getTestTypeName);
             myFolderBox = RubyRunConfigurationFragmentUtil.createPathBox(
                 project,
                 parent,
@@ -112,6 +115,10 @@ public abstract class AbstractRTestsTargetFragment<T extends AbstractRubyRunConf
                 RubyApiLocalize.runConfigurationMessagesSelectRubySciptPath()
             );
 
+            myFolderLabel = Label.create(getFolderLabel());
+            myFileMaskLabel = Label.create(getFileMaskLabel());
+            myScriptLabel = Label.create(getScriptLabel());
+
             myTestTypeGroup.addValueListener(this::onTestTypeSelected);
         }
 
@@ -119,11 +126,11 @@ public abstract class AbstractRTestsTargetFragment<T extends AbstractRubyRunConf
         @Override
         public void addRows(RunConfigurationFragmentLayout layout) {
             FormBuilder builder = FormBuilder.create();
-            builder.addLabeled(getTestTypeLabel(), myTestTypeGroup.fillHorizontal(getTestTypes(), AbstractRTestsTargetFragment.this::getTestTypeName));
+            builder.addLabeled(getTestTypeLabel(), myTestTypeLayout);
 
-            myFolderLabel = RubyRunConfigurationFragmentUtil.addRow(builder, getFolderLabel(), myFolderBox.getComponent());
-            myFileMaskLabel = RubyRunConfigurationFragmentUtil.addRow(builder, getFileMaskLabel(), myFileMaskBox);
-            myScriptLabel = RubyRunConfigurationFragmentUtil.addRow(builder, getScriptLabel(), myScriptBox.getComponent());
+            builder.addLabeled(myFolderLabel, myFolderBox.getComponent());
+            builder.addLabeled(myFileMaskLabel, myFileMaskBox);
+            builder.addLabeled(myScriptLabel, myScriptBox.getComponent());
 
             addExtraRows(builder);
 
@@ -144,13 +151,8 @@ public abstract class AbstractRTestsTargetFragment<T extends AbstractRubyRunConf
         }
 
         @RequiredUIAccess
-        protected final void setRowVisible(@Nullable Label label, Component field, boolean visible) {
-            if (label != null) {
-                RubyRunConfigurationFragmentUtil.setRowVisible(label, field, visible);
-            }
-            else {
-                field.setVisible(visible);
-            }
+        protected final void setRowVisible(Label label, Component field, boolean visible) {
+            RubyRunConfigurationFragmentUtil.setRowVisible(label, field, visible);
         }
 
         @RequiredUIAccess

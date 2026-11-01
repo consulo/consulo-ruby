@@ -16,7 +16,6 @@
 
 package org.jetbrains.plugins.ruby.rails.actions.templates;
 
-import com.intellij.java.language.psi.PsiJavaPackage;
 import consulo.application.ApplicationManager;
 import consulo.application.CommonBundle;
 import consulo.fileTemplate.FileTemplate;
@@ -72,10 +71,8 @@ public class CreateFileFromTemplateDialog extends DialogWrapper
 		myTemplate = template;
 		setTitle(RBundle.message("title.new.from.template", template.getName()));
 
-		PsiJavaPackage aPackage = null;//myDirectory.getPackage();
-		String packageName = aPackage == null ? "" : aPackage.getQualifiedName();
 		myDefaultProperties = FileTemplateManager.getInstance().getDefaultProperties();
-		myDefaultProperties.setProperty(FileTemplate.ATTRIBUTE_PACKAGE_NAME, packageName);
+		myDefaultProperties.setProperty(FileTemplate.ATTRIBUTE_PACKAGE_NAME, "");
 
 		String[] unsetAttributes = null;
 		try

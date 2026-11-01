@@ -35,9 +35,9 @@ import consulo.project.Project;
 public class VendorLayer extends AbstractRailsLayeredCachedSymbol
 {
 
-	public VendorLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isJRubyEnabled)
+	public VendorLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isInteropEnabled)
 	{
-		super(FileSymbolType.RAILS_MODULE_LAYER, project, module, sdk, isJRubyEnabled);
+		super(FileSymbolType.RAILS_MODULE_LAYER, project, module, sdk, isInteropEnabled);
 	}
 
 	@Override

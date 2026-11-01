@@ -20,7 +20,7 @@ import com.intellij.java.language.psi.PsiMethod;
 import jakarta.annotation.Nonnull;
 
 import org.jetbrains.annotations.NonNls;
-import org.jetbrains.plugins.ruby.jruby.JavaPsiUtil;
+import org.jetbrains.plugins.ruby.jruby.codeInsight.types.JavaPsiUtil;
 import org.jetbrains.plugins.ruby.rails.nameConventions.NamingConventions;
 
 /**

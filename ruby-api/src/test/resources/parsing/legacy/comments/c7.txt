@@ -1,0 +1,30 @@
+ =begin
+TEST COMMENT
+=end
+-------
+Ruby file
+  PsiWhiteSpace(' ')
+  Compound statement
+    PsiErrorElement:Unexpected: =
+      <empty list>
+    PsiElement(=)('=')
+    PsiErrorElement:Expected: ; or end of line
+      <empty list>
+    Block statement
+      PsiElement(begin)('begin')
+      PsiWhiteSpace('\n')
+      Body statement
+        Compound statement
+          Command call
+            Constant
+              PsiElement(constant)('TEST')
+            PsiWhiteSpace(' ')
+            List of expressions
+              Constant
+                PsiElement(constant)('COMMENT')
+          PsiElement(end of line)('\n')
+          PsiErrorElement:Unexpected: =
+            <empty list>
+          PsiElement(=)('=')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

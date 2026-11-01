@@ -48,6 +48,7 @@ import org.jetbrains.plugins.ruby.rails.module.view.id.NodeId;
 import org.jetbrains.plugins.ruby.rails.module.view.nodes.RailsNode;
 import org.jetbrains.plugins.ruby.rails.nameConventions.NamingConventions;
 import org.jetbrains.plugins.ruby.rails.run.configuration.RailsRunConfigurationType;
+import org.jetbrains.plugins.ruby.rails.run.configuration.server.RailsServerRunConfiguration;
 import org.jetbrains.plugins.ruby.rails.run.filters.GeneratorsLinksFilter;
 import org.jetbrains.plugins.ruby.ruby.RubyUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
@@ -93,6 +94,7 @@ public class RailsUtil {
         final String errorTitle = RBundle.message("execution.error.title.generate.rails.app", moduleName);
 
         final LinkedList<String> generatorArgsList = new LinkedList<String>();
+        generatorArgsList.add("new");
         generatorArgsList.add(location);
         generatorArgsList.add(overwrite ? RailsConstants.PARAM_FORCE_OVERWRITE : RailsConstants.PARAM_SKIP);
         if (preconfigureForDBName != null) {
@@ -144,47 +146,23 @@ public class RailsUtil {
     }
 
     /**
-     * Creates Rails Server Run Configuration
+     * Adds a Rails server configuration of the module unless the project has one
      *
-     * @param module Ruby or Java module
+     * @param module Rails module
      */
-    public static void createRailsRunConfiguration(final Module module) {
-        final Project project = module.getProject();
-
-        final String title = RBundle.message("rails.facet.builder.run.configuration.server.creating");
-        final Task task = new Task.Backgroundable(project, title, true) {
-            @Override
-            public void run(ProgressIndicator indicator) {
-                if (indicator != null) {
-                    indicator.setText(RBundle.message("progress.backgnd.indicator.title.please.wait", getTitle()));
-                }
-
-                final RunManager runManagerEx = RunManager.getInstance(project);
-
-                IdeaInternalUtil.runInsideReadAction(new ThrowableRunnable<Exception>() {
-                    @Override
-                    public void run() throws Exception {
-                        // requires read action
-                        final RunnerAndConfigurationSettings settings = RailsRunConfigurationType.getInstance().getWEBrickFactory().createRunConfigurationSettings(module);
-
-                        runManagerEx.addConfiguration(settings, false);
-                        runManagerEx.setSelectedConfiguration(settings);
-                    }
-                });
+    public static void ensureRailsServerConfiguration(@Nonnull final Module module) {
+        final RunManager runManager = RunManager.getInstance(module.getProject());
+        final RailsRunConfigurationType type = RailsRunConfigurationType.getInstance();
+        for (RunnerAndConfigurationSettings existing : runManager.getConfigurationSettingsList(type)) {
+            if (existing.getConfiguration() instanceof RailsServerRunConfiguration server && module.getName().equals(server.getModuleName())) {
+                return;
             }
-        };
-
-        final Runnable taskRunner = new Runnable() {
-            @Override
-            public void run() {
-                ProgressManager.getInstance().run(task);
-            }
-        };
-        if (!project.isInitialized()) {
-            StartupManager.getInstance(project).registerPostStartupActivity(taskRunner);
         }
-        else {
-            taskRunner.run();
+
+        final RunnerAndConfigurationSettings settings = type.getServerFactory().createRunConfigurationSettings(module);
+        runManager.addConfiguration(settings, false);
+        if (runManager.getSelectedConfiguration() == null) {
+            runManager.setSelectedConfiguration(settings);
         }
     }
 

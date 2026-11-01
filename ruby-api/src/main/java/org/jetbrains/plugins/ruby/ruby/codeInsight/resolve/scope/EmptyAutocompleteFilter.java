@@ -30,7 +30,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolFilte
 public class EmptyAutocompleteFilter implements ScopeAutocompleteFilter
 {
 	@Override
-	public boolean allowJRuby()
+	public boolean allowForeign()
 	{
 		return true;
 	}

@@ -16,7 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.references.psi;
 
-import com.intellij.java.language.psi.PsiClass;
+import consulo.language.psi.PsiNamedElement;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import consulo.document.util.TextRange;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiManager;
@@ -97,13 +99,14 @@ public class RNamedReference implements RPsiPolyvariantReference
 		return myElement.setName(newElementName);
 	}
 
-	// IDEA calls bindToElement if we rename/move Java class
+	// called when a referenced foreign class is renamed or moved
 	@Override
 	public PsiElement bindToElement(@Nonnull PsiElement element) throws IncorrectOperationException
 	{
-		if(element instanceof PsiClass)
+		final RubyInteropProvider provider = RubyInterop.forElement(element);
+		if(provider != null && provider.isClass(element) && element instanceof PsiNamedElement namedElement)
 		{
-			return handleElementRename(((PsiClass) element).getName());
+			return handleElementRename(namedElement.getName());
 		}
 		return null;
 	}

@@ -48,6 +48,9 @@
 				<extensions>true</extensions>
 				<configuration>
 					<repositoryChannel>nightly</repositoryChannel>
+					<dependencies>
+						<dependency>org.jetbrains.idea.maven</dependency>
+					</dependencies>
 					<packaging>
 						<skip>${dev.mode}</skip>
 						<version>${build.number}</version>
@@ -174,6 +177,18 @@
 		<dependency>
 			<groupId>consulo</groupId>
 			<artifactId>consulo-file-editor-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>consulo.jruby-maven</artifactId>
+			<version>${project.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-external-system-api</artifactId>
 			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>

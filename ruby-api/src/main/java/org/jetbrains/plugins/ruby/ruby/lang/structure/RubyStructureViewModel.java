@@ -16,7 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.lang.structure;
 
+import consulo.codeEditor.Editor;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import consulo.language.editor.structureView.TextEditorBasedStructureViewModel;
 import consulo.language.psi.PsiFile;
@@ -46,9 +48,10 @@ public class RubyStructureViewModel extends TextEditorBasedStructureViewModel
 
 	private RPsiElement myRoot;
 
-	public RubyStructureViewModel(final RPsiElement root)
+	public RubyStructureViewModel(@Nullable final Editor editor, final RPsiElement root)
 	{
-		super(root.getContainingFile());
+		// with the editor given, the model does not look for one in the focused component
+		super(editor, root.getContainingFile());
 		myRoot = root;
 	}
 

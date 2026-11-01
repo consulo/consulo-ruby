@@ -16,56 +16,53 @@
 
 package org.jetbrains.plugins.ruby.ruby.gotoByName;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import consulo.ide.navigation.ChooseByNameContributor;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.application.util.function.Processor;
+import consulo.content.scope.SearchScope;
+import consulo.ide.navigation.GotoSymbolContributor;
 import consulo.language.psi.scope.GlobalSearchScope;
-import jakarta.annotation.Nonnull;
+import consulo.language.psi.search.FindSymbolParameters;
+import consulo.language.psi.stub.IdFilter;
+import consulo.language.psi.stub.StubIndex;
+import consulo.navigation.NavigationItem;
+import consulo.project.content.scope.ProjectAwareSearchScope;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.stubs.index.RubyClassNameIndex;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.stubs.index.RubyMethodNameIndex;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.stubs.index.RubyModuleNameIndex;
-import consulo.navigation.NavigationItem;
-import consulo.project.Project;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Created by IntelliJ IDEA.
- *
- * @author: Roman Chernyatchik, oleg
- * @date: 07.11.2006
+ * Go to Symbol: classes, modules and methods
  */
-public class RubySymbolContributor extends RubyBaseContributor implements ChooseByNameContributor
+@ExtensionImpl
+public class RubySymbolContributor extends RubyBaseContributor implements GotoSymbolContributor
 {
-
 	@Override
-	public String[] getNames(final Project project, boolean includeNonProjectItems)
+	public void processNames(Processor<String> processor, SearchScope searchScope, IdFilter idFilter)
 	{
-		final Set<String> names = new LinkedHashSet<String>();
-		names.addAll(RubyClassNameIndex.allKeys(project));
-		names.addAll(RubyModuleNameIndex.allKeys(project));
-		names.addAll(RubyMethodNameIndex.allKeys(project));
-		return names.toArray(new String[names.size()]);
+		ProjectAwareSearchScope scope = (ProjectAwareSearchScope) searchScope;
+		StubIndex.getInstance().processAllKeys(RubyClassNameIndex.KEY, processor, scope, idFilter);
+		StubIndex.getInstance().processAllKeys(RubyModuleNameIndex.KEY, processor, scope, idFilter);
+		StubIndex.getInstance().processAllKeys(RubyMethodNameIndex.KEY, processor, scope, idFilter);
 	}
 
-
 	@Override
-	public NavigationItem[] getItemsByName(String name, final String pattern, Project project, boolean includeNonProjectItems)
+	public void processElementsWithName(String name, Processor<NavigationItem> processor, FindSymbolParameters parameters)
 	{
-		final GlobalSearchScope scope = includeNonProjectItems ? GlobalSearchScope.allScope(project) : GlobalSearchScope.projectScope(project);
-		final ArrayList<NavigationItem> items = new ArrayList<NavigationItem>();
-		final List<RPsiElement> elements = new ArrayList<RPsiElement>();
-		elements.addAll(RubyClassNameIndex.find(name, project, scope));
-		elements.addAll(RubyModuleNameIndex.find(name, project, scope));
-		elements.addAll(RubyMethodNameIndex.find(name, project, scope));
-		addItems(elements, project, items);
-		return items.toArray(new NavigationItem[items.size()]);
-	}
-
-	private void addItems(@Nonnull final List<RPsiElement> elements, @Nonnull final Project project, @Nonnull final ArrayList<NavigationItem> items)
-	{
-		items.addAll(getItems(elements, project));
+		GlobalSearchScope scope = parameters.isSearchInLibraries() ? GlobalSearchScope.allScope(parameters.getProject()) : GlobalSearchScope.projectScope(parameters.getProject());
+		List<RPsiElement> elements = new ArrayList<>();
+		elements.addAll(RubyClassNameIndex.find(name, parameters.getProject(), scope));
+		elements.addAll(RubyModuleNameIndex.find(name, parameters.getProject(), scope));
+		elements.addAll(RubyMethodNameIndex.find(name, parameters.getProject(), scope));
+		for(NavigationItem item : getItems(elements, parameters.getProject()))
+		{
+			if(!processor.process(item))
+			{
+				return;
+			}
+		}
 	}
 }

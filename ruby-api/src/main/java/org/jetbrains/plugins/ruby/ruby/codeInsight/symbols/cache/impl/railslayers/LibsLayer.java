@@ -38,9 +38,9 @@ public class LibsLayer extends AbstractRailsLayeredCachedSymbol
 {
 	private String myLayerRootUrl;
 
-	public LibsLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isJRubyEnabled)
+	public LibsLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isInteropEnabled)
 	{
-		super(FileSymbolType.VENDOR_LAYER, project, module, sdk, isJRubyEnabled);
+		super(FileSymbolType.VENDOR_LAYER, project, module, sdk, isInteropEnabled);
 
 		assert module != null;
 

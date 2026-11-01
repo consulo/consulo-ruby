@@ -16,8 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.references;
 
-import com.intellij.java.language.psi.PsiClass;
-import com.intellij.java.language.psi.PsiMethod;
+import consulo.language.psi.PsiNamedElement;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import consulo.language.psi.PsiElement;
 import consulo.project.Project;
 import jakarta.annotation.Nonnull;
@@ -25,8 +26,7 @@ import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.resolve.ResolveUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Type;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.FileSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ProxyJavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.methods.RMethod;
@@ -59,26 +59,22 @@ public class NewReference extends RQualifiedReference
 			return Collections.emptyList();
 		}
 
-		// We process only JAVA_CLASS here
+		// We process only FOREIGN_CLASS here
 		final List<Symbol> symbols = ResolveUtil.resolveToSymbols(myRefObject);
 		if(symbols.size() == 1)
 		{
-			PsiElement element = null;
 			final Symbol symbol = symbols.get(0);
-			if(symbol.getType() == Type.JAVA_CLASS)
-			{
-				element = ((JavaSymbol) symbol).getPsiElement();
-			}
-			if(symbol.getType() == Type.JAVA_PROXY_CLASS)
-			{
-				element = ((ProxyJavaSymbol) symbol).getPsiElement();
-			}
-			if(element instanceof PsiClass)
+			final PsiElement element = symbol.getType() == Type.FOREIGN_CLASS || symbol.getType() == Type.FOREIGN_PROXY_CLASS ? RubyInterop.getElement(symbol) : null;
+			final RubyInteropProvider provider = RubyInterop.forElement(element);
+			if(provider != null && provider.isClass(element))
 			{
 				final ArrayList<Symbol> variants = new ArrayList<Symbol>();
-				for(PsiMethod method : ((PsiClass) element).getConstructors())
+				for(PsiElement constructor : provider.getConstructors(element))
 				{
-					variants.add(new JavaSymbol(method, method.getName(), null, Type.JAVA_METHOD));
+					if(constructor instanceof PsiNamedElement namedConstructor && namedConstructor.getName() != null)
+					{
+						variants.add(new ForeignSymbol(constructor, namedConstructor.getName(), null, Type.FOREIGN_METHOD));
+					}
 				}
 				return variants;
 			}

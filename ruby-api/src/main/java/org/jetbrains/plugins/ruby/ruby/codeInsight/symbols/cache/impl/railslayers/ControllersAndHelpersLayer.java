@@ -39,9 +39,9 @@ public class ControllersAndHelpersLayer extends AbstractRailsLayeredCachedSymbol
 	private String myControllersRootUrl;
 	private String myHelpersRootUrl;
 
-	public ControllersAndHelpersLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isJRubyEnabled)
+	public ControllersAndHelpersLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isInteropEnabled)
 	{
-		super(FileSymbolType.MODELS_LAYER, project, module, sdk, isJRubyEnabled);
+		super(FileSymbolType.MODELS_LAYER, project, module, sdk, isInteropEnabled);
 
 		assert module != null;
 

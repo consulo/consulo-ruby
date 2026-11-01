@@ -19,7 +19,6 @@ package org.jetbrains.plugins.ruby.rails.facet.configuration;
 import jakarta.annotation.Nullable;
 
 import jakarta.annotation.Nonnull;
-import org.jetbrains.plugins.ruby.rails.actions.rake.task.RakeTask;
 
 /**
  * Created by IntelliJ IDEA.
@@ -41,16 +40,6 @@ public interface BaseRailsFacetConfiguration
 
 	@Nonnull
 	public StandardRailsPaths getPaths();
-
-	@Nullable
-	public String[] getGenerators();
-
-	public void reloadGenerators();
-
-	@Nullable
-	public RakeTask getRakeTasks();
-
-	public void reloadRakeTasks();
 
 	public boolean isInitialized();
 }

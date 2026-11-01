@@ -112,7 +112,7 @@ public class COMMAND_CALL implements RubyTokenTypes
         | block_command
         | command
 */
-		if(result != RubyElementTypes.EMPTY_INPUT && builder.compare(kDO))
+		if(result != RubyElementTypes.EMPTY_INPUT && builder.compare(kDO) && builder.isDoBlockAllowed())
 		{
 			return BLOCK_COMMAND.parseWithLeadCOMMAND(builder, marker, result);
 		}

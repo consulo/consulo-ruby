@@ -16,13 +16,12 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure;
 
-import com.intellij.java.language.psi.PsiClass;
-import com.intellij.java.language.psi.PsiJavaPackage;
 import consulo.application.ReadAction;
 import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiNamedElement;
+import consulo.ruby.interop.RubyInterop;
 import consulo.logging.Logger;
 import jakarta.annotation.Nonnull;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.resolve.JavaResolveUtil;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.*;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.variables.FieldAttrType;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.variables.RFieldAttr;
@@ -164,7 +163,7 @@ public class SymbolBuilder {
                                 }
                             }
                             else
-                                // JRuby specific include java class
+                                // include foreign classes and packages
                                 if (type == StructureType.CALL_IMPORT) {
                                     processImportJavaClass((RImportJavaClass) element, symbol);
                                 }
@@ -202,7 +201,7 @@ public class SymbolBuilder {
         Symbol superClassSymbol = null;
         final RVirtualName superClass = ReadAction.compute(rVirtualClass::getVirtualSuperClass);
         if (superClass != null) {
-            superClassSymbol = findJRubyOrRuby(symbol, rVirtualClass, superClass, new TypeSet(Type.CLASS, Type.JAVA_PROXY_CLASS));
+            superClassSymbol = findForeignOrRuby(symbol, rVirtualClass, superClass, new TypeSet(Type.CLASS, Type.FOREIGN_PROXY_CLASS));
         }
 
         // creating class
@@ -296,7 +295,7 @@ public class SymbolBuilder {
     private void processIncludeOrExtend(@Nonnull final RInclude include, @Nonnull final Symbol symbol) {
         final Type type = ReadAction.compute(() -> include.getType()) == StructureType.CALL_INCLUDE ? Type.INCLUDE : Type.EXTEND;
         for (RVirtualName path : ReadAction.computeNotNull(include::getVirtualNames)) {
-            final Symbol includeSymbol = findJRubyOrRuby(symbol, include, path, new TypeSet(Type.MODULE, Type.JAVA_PROXY_CLASS));
+            final Symbol includeSymbol = findForeignOrRuby(symbol, include, path, new TypeSet(Type.MODULE, Type.FOREIGN_PROXY_CLASS));
             // adding to symbol
             if (includeSymbol != null) {
                 myFileSymbol.addChild(symbol, new SpecialSymbol(myFileSymbol, symbol, includeSymbol, type));
@@ -380,9 +379,12 @@ public class SymbolBuilder {
         final Symbol context = SymbolUtil.getClassModuleFileSymbol(symbol);
         LOG.assertTrue(context != null, "Context cannot be null");
         for (RVirtualName path : importJavaClass.getVirtualNames()) {
-            final PsiElement clazzz = JavaResolveUtil.getPackageOrClass(symbol.getProject(), path.getPath());
-            if (clazzz instanceof PsiClass) {
-                myFileSymbol.addChild(context, new ProxyJavaSymbol(myFileSymbol, path.getName(), clazzz, context, importJavaClass));
+            final PsiElement clazzz = RubyInterop.compute(provider -> {
+                final PsiElement element = provider.findPackageOrClass(symbol.getProject(), path.getPath());
+                return element != null && provider.isClass(element) ? element : null;
+            });
+            if (clazzz != null) {
+                myFileSymbol.addChild(context, new ProxyForeignSymbol(myFileSymbol, path.getName(), clazzz, context, importJavaClass));
             }
         }
     }
@@ -391,9 +393,15 @@ public class SymbolBuilder {
         final Symbol context = SymbolUtil.getClassModuleFileSymbol(symbol);
         LOG.assertTrue(context != null, "Context cannot be null");
         final String fullName = includeJavaClass.getQualifiedName();
-        final PsiElement clazzz = fullName != null ? JavaResolveUtil.getPackageOrClass(symbol.getProject(), fullName) : null;
-        if (clazzz instanceof PsiClass) {
-            myFileSymbol.addChild(context, new ProxyJavaSymbol(myFileSymbol, ((PsiClass) clazzz).getName(), clazzz, context, includeJavaClass));
+        if (fullName == null) {
+            return;
+        }
+        final PsiElement clazzz = RubyInterop.compute(provider -> {
+            final PsiElement element = provider.findPackageOrClass(symbol.getProject(), fullName);
+            return element != null && provider.isClass(element) ? element : null;
+        });
+        if (clazzz instanceof PsiNamedElement namedClass) {
+            myFileSymbol.addChild(context, new ProxyForeignSymbol(myFileSymbol, namedClass.getName(), clazzz, context, includeJavaClass));
         }
     }
 
@@ -401,19 +409,30 @@ public class SymbolBuilder {
         final Symbol context = SymbolUtil.getClassModuleFileSymbol(symbol);
         LOG.assertTrue(context != null, "Context cannot be null");
         final String fullName = includeJavaPackage.getQualifiedName();
-        final PsiElement psiPackage = fullName != null ? JavaResolveUtil.getPackageOrClass(symbol.getProject(), fullName) : null;
-        if (psiPackage instanceof PsiJavaPackage) {
-            for (PsiClass clazzz : ((PsiJavaPackage) psiPackage).getClasses()) {
-                myFileSymbol.addChild(context, new ProxyJavaSymbol(myFileSymbol, clazzz.getName(), clazzz, context, includeJavaPackage));
+        if (fullName == null) {
+            return;
+        }
+        final List<PsiElement> classes = RubyInterop.compute(provider -> {
+            final PsiElement element = provider.findPackageOrClass(symbol.getProject(), fullName);
+            return element != null && provider.isPackage(element) ? provider.getPackageClasses(element) : null;
+        });
+        if (classes != null) {
+            for (PsiElement clazzz : classes) {
+                if (clazzz instanceof PsiNamedElement namedClass) {
+                    myFileSymbol.addChild(context, new ProxyForeignSymbol(myFileSymbol, namedClass.getName(), clazzz, context, includeJavaPackage));
+                }
             }
         }
     }
 
-    private Symbol findJRubyOrRuby(@Nonnull final Symbol symbol, @Nonnull final RPsiElement prototype, @Nonnull final RVirtualName path, final TypeSet typeSet) {
+    private Symbol findForeignOrRuby(@Nonnull final Symbol symbol, @Nonnull final RPsiElement prototype, @Nonnull final RVirtualName path, final TypeSet typeSet) {
         final List<String> fullPath = path.getPath();
-        // Try to find JRuby
-        if (myFileSymbol.isJRubyEnabled() && !path.isGlobal() && TextUtil.isIdentifier(fullPath.get(0))) {
-            return SymbolUtil.findJRubySymbol(symbol.getProject(), fullPath);
+        // Try to find a foreign package or class
+        if (myFileSymbol.isInteropEnabled() && !path.isGlobal() && TextUtil.isIdentifier(fullPath.get(0))) {
+            final Symbol foreignSymbol = RubyInterop.findSymbol(symbol.getProject(), fullPath);
+            if (foreignSymbol != null) {
+                return foreignSymbol;
+            }
         }
         // Searching in parent!
         final Symbol includeSymbol = SymbolCoreUtil.find(myFileSymbol, symbol, fullPath, path.isGlobal(), true, typeSet);

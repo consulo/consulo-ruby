@@ -1,0 +1,26 @@
+def fffoo(ddd)  /dfdf/ end
+--------
+Ruby file
+  Compound statement
+    Ruby:METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Function name
+          PsiElement(identifier)('fffoo')
+      PsiElement(()('(')
+      Function argument list
+        Argument
+          Identifier
+            PsiElement(identifier)('ddd')
+      PsiElement())(')')
+      PsiWhiteSpace('  ')
+      Body statement
+        Compound statement
+          Regular expression
+            PsiElement(regexp beginning)('/')
+            PsiElement(regexp content)('dfdf')
+            PsiElement(regexp end)('/')
+      PsiWhiteSpace(' ')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

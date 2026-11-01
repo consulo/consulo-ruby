@@ -39,6 +39,8 @@ import consulo.language.ast.TokenSet;
  */
 public class RBuilderImpl implements RubyTokenTypes, RBuilder
 {
+	private boolean myDoBlockAllowed = true;
+
 	// builder used in parsing
 	private PsiBuilder myBuilder;
 
@@ -318,6 +320,20 @@ public class RBuilderImpl implements RubyTokenTypes, RBuilder
 	///////// Pass Tokens //////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+	@Override
+	public boolean isDoBlockAllowed()
+	{
+		return myDoBlockAllowed;
+	}
+
+	@Override
+	public boolean setDoBlockAllowed(final boolean allowed)
+	{
+		final boolean previous = myDoBlockAllowed;
+		myDoBlockAllowed = allowed;
+		return previous;
+	}
 
 	@Override
 	public boolean passHeredocs()

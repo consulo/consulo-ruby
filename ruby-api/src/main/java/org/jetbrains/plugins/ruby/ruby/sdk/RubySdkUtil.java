@@ -16,24 +16,24 @@
 
 package org.jetbrains.plugins.ruby.ruby.sdk;
 
-import consulo.application.util.SystemInfo;
 import consulo.content.base.BinariesOrderRootType;
 import consulo.content.base.SourcesOrderRootType;
+import consulo.content.bundle.PlatformAwareSdkType;
 import consulo.content.bundle.Sdk;
 import consulo.content.bundle.SdkModificator;
 import consulo.content.bundle.SdkType;
 import consulo.content.bundle.SdkTypeId;
+import consulo.platform.Platform;
 import consulo.virtualFileSystem.VirtualFile;
 import consulo.virtualFileSystem.VirtualFileManager;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.plugins.ruby.ruby.sdk.gemRootType.GemOrderRootType;
-import org.jetbrains.plugins.ruby.ruby.sdk.jruby.JRubySdkType;
-import org.jetbrains.plugins.ruby.support.utils.OSUtil;
 import org.jetbrains.plugins.ruby.support.utils.VirtualFileUtil;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,20 +46,11 @@ import java.util.List;
 public class RubySdkUtil
 {
 	@NonNls
-	private static final String RUBY_WIN_DEFAULT_HOME_PATH = "C:\\ruby";
-	@NonNls
-	private static final String RUBY_UNIX_DEFAULT_HOME_PATH = "/usr";
-
-	@NonNls
-	private static final String JRUBY_WIN_DEFAULT_HOME_PATH = "C:\\jruby";
-	@NonNls
-	private static final String JRUBY_UNIX_DEFAULT_HOME_PATH = "/usr/local/jruby";
-	@NonNls
 	private static final String GEM_LIB_DIR = File.separator + "lib";
 
 
 	/**
-	 * Checks if sdk is Ruby SDK (or JRuby SDK)
+	 * Checks if sdk is a Ruby SDK
 	 *
 	 * @param sdk sdk to inspect
 	 * @return true, if sdk is Ruby type
@@ -81,7 +72,15 @@ public class RubySdkUtil
 			return false;
 		}
 		final VirtualFile sdkHomeDir = sdk.getHomeDirectory();
-		return sdkHomeDir != null && ((SdkType) sdk.getSdkType()).isValidSdkHome(sdkHomeDir.getPath());
+		if(sdkHomeDir == null)
+		{
+			return false;
+		}
+		if(sdk.getSdkType() instanceof PlatformAwareSdkType platformAwareSdkType)
+		{
+			return platformAwareSdkType.isValidSdkHome(Platform.current(), Path.of(sdkHomeDir.getPath()));
+		}
+		return ((SdkType) sdk.getSdkType()).isValidSdkHome(sdkHomeDir.getPath());
 	}
 
 	/**
@@ -166,59 +165,6 @@ public class RubySdkUtil
 		}
 	}
 
-	@Nullable
-	private static String findInterpreter(@Nonnull final RubySdkType sdkType)
-	{
-		final String exePath = sdkType.getExePath();
-		final String interpreterName = sdkType.getRubyExecutable();
-		assert exePath.endsWith(interpreterName);
-		final String pathByName = OSUtil.findExecutableByName(interpreterName);
-		if(pathByName == null)
-		{
-			return null;
-		}
-		return pathByName.endsWith(exePath) ? pathByName.substring(0, pathByName.length() - exePath.length()) : null;
-	}
-
-	public static String suggestRubyHomePath()
-	{
-		// try to find in system path
-		final String path = findInterpreter(RubySdkType.getInstance());
-		if(path != null)
-		{
-			return path;
-		}
-
-		if(SystemInfo.isWindows)
-		{
-			return RUBY_WIN_DEFAULT_HOME_PATH;
-		}
-		if(SystemInfo.isUnix)
-		{
-			return RUBY_UNIX_DEFAULT_HOME_PATH;
-		}
-		return null;
-	}
-
-	public static String suggestJRubyHomePath()
-	{
-		// try to find in system path
-		final String path = findInterpreter(JRubySdkType.getInstance());
-		if(path != null)
-		{
-			return path;
-		}
-
-		if(SystemInfo.isWindows)
-		{
-			return JRUBY_WIN_DEFAULT_HOME_PATH;
-		}
-		if(SystemInfo.isUnix)
-		{
-			return JRUBY_UNIX_DEFAULT_HOME_PATH;
-		}
-		return null;
-	}
 
 	@Nonnull
 	public static List<String> getAllGemsLibUrls(@Nonnull final VirtualFile gemRoot)

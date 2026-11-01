@@ -16,12 +16,14 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache.impl.module;
 
+import consulo.ruby.runtime.RubyRuntime;
+import consulo.ruby.runtime.RubyRuntimeProvider;
+import consulo.module.content.layer.OrderEnumerator;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import consulo.content.bundle.Sdk;
 import consulo.module.Module;
-import org.jetbrains.plugins.ruby.jruby.facet.JRubyFacet;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache.CachedSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache.FileSymbolType;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache.SymbolsCache;
@@ -42,9 +44,9 @@ import consulo.project.Project;
 public class ModuleLayer extends AbstractLayeredCachedSymbol
 {
 
-	public ModuleLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean jRubyEnabled)
+	public ModuleLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean interopEnabled)
 	{
-		super(project, module, sdk, jRubyEnabled);
+		super(project, module, sdk, interopEnabled);
 	}
 
 	@Override
@@ -52,7 +54,7 @@ public class ModuleLayer extends AbstractLayeredCachedSymbol
 	protected CachedSymbol getBaseSymbol()
 	{
 		final SymbolsCache cache = SymbolsCache.getInstance(myProject);
-		return cache.getBuiltInCachedSymbol(FileSymbolType.BUILT_IN, mySdk, isJRubyEnabled);
+		return cache.getBuiltInCachedSymbol(FileSymbolType.BUILT_IN, mySdk, isInteropEnabled);
 	}
 
 	@Override
@@ -62,22 +64,10 @@ public class ModuleLayer extends AbstractLayeredCachedSymbol
 		if(myModule != null)
 		{
 			CheckableDirectoriesContainer checkDirectories = null;
-			if(isJRubyEnabled)
+			RSupportPerModuleSettings settings = RModuleUtil.getRubySupportSettings(myModule);
+			if(settings != null)
 			{
-				final JRubyFacet facet = JRubyFacet.getInstance(myModule);
-				if(facet != null)
-				{
-					checkDirectories = facet.getConfiguration().getLoadPathDirs();
-				}
-			}
-			else
-			{
-				RSupportPerModuleSettings settings = RModuleUtil.getRubySupportSettings(myModule);
-				if(settings != null)
-				{
-					checkDirectories = settings.getLoadPathDirs();
-
-				}
+				checkDirectories = settings.getLoadPathDirs();
 			}
 
 			if(checkDirectories != null)
@@ -89,6 +79,22 @@ public class ModuleLayer extends AbstractLayeredCachedSymbol
 						myFileSymbol.addLoadPathUrl(VirtualFileUtil.constructLocalUrl(item.getDirectoryPath()));
 					}
 				}
+			}
+
+			// the load path of the runtime, e.g. a standard library inside a jar
+			final RubyRuntime runtime = RubyRuntimeProvider.findRuntime(myModule);
+			if(runtime != null)
+			{
+				for(String url : runtime.getLoadPathUrls())
+				{
+					myFileSymbol.addLoadPathUrl(url);
+				}
+			}
+
+			// the libraries of the module - the gems of a Bundler project
+			for(String url : OrderEnumerator.orderEntries(myModule).librariesOnly().recursively().sources().getUrls())
+			{
+				myFileSymbol.addLoadPathUrl(url);
 			}
 		}
 	}

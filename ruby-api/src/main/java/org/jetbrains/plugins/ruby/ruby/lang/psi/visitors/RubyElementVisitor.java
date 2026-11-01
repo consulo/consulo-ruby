@@ -18,7 +18,6 @@ package org.jetbrains.plugins.ruby.ruby.lang.psi.visitors;
 
 import org.jetbrains.plugins.ruby.ruby.lang.psi.variables.RConstant;
 
-import com.intellij.java.language.psi.PsiReferenceExpression;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiElementVisitor;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RFile;
@@ -56,11 +55,6 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.variables.global.RGlobalVariable
  */
 public abstract class RubyElementVisitor extends PsiElementVisitor
 {
-
-	public void visitReferenceExpression(PsiReferenceExpression expression)
-	{
-		visitElement(expression);
-	}
 
 	@Override
 	public void visitElement(PsiElement element)

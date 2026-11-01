@@ -70,6 +70,15 @@ public class BODYSTMT implements RubyTokenTypes
 		RMarker bodyMarker = builder.mark();
 		COMPSTMT.parse(builder, kEND, kRESCUE, kELSE, kENSURE);
 
+		parseRescueElseEnsure(builder);
+		bodyMarker.done(RubyElementTypes.BODY_STATEMENT);
+	}
+
+	/**
+	 * The {@code rescue} / {@code else} / {@code ensure} clauses after a body
+	 */
+	public static void parseRescueElseEnsure(final RBuilder builder)
+	{
 		while(builder.compareIgnoreEOL(kRESCUE))
 		{
 			OPT_RESCUE.parse(builder);
@@ -82,6 +91,5 @@ public class BODYSTMT implements RubyTokenTypes
 		{
 			parseOPT_ENSURE(builder);
 		}
-		bodyMarker.done(RubyElementTypes.BODY_STATEMENT);
 	}
 }

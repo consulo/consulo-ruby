@@ -37,6 +37,9 @@ import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.basicTypes.stringLike
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.basicTypes.stringLike.Strings;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.basicTypes.stringLike.Words;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.commands.BRACE_BLOCK;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.commands.CALL_ARGS;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.definitions.method.BODYSTMT;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.definitions.method.F_ARGS;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.BeginEndBlock;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.Case;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.Defined;
@@ -203,8 +206,20 @@ primary : primary tCOLON2 tCONSTANT
 /*
             | primary_value '.' operation2 opt_paren_args
 */
-			if(builder.compareAndEat(tDOT))
+			if(builder.compareAndEat(tDOT) || builder.compareAndEat(tANDDOT))
 			{
+				// callable.(args)
+				if(builder.compare(BNF.tLPARENS))
+				{
+					builder.advanceLexer();
+					CALL_ARGS.parse(builder);
+					builder.passEOLs();
+					builder.match(tRPAREN);
+					statementMarker.done(RubyElementTypes.FUNCTION_CALL);
+					result = RubyElementTypes.FUNCTION_CALL;
+					statementMarker = statementMarker.precede();
+					continue;
+				}
 				if(OPERATION.parse2(builder) == RubyElementTypes.EMPTY_INPUT)
 				{
 					builder.error(ErrorMsg.expected(RBundle.message("parsing.operation")));
@@ -251,7 +266,8 @@ primary : primary tCOLON2 tCONSTANT
 			//          [brace_block]
 			if(builder.compare(BNF.tCODE_BLOCK_BEG_TOKENS))
 			{
-				if(BNF.ITERATOR_OBJECTS.contains(result))
+				// in command arguments a do block belongs to the command
+				if(BNF.ITERATOR_OBJECTS.contains(result) && (builder.isDoBlockAllowed() || !builder.compare(kDO)))
 				{
 					BRACE_BLOCK.parse(builder);
 					statementMarker.done(RubyElementTypes.BLOCK_CALL);
@@ -287,6 +303,10 @@ primary : primary tCOLON2 tCONSTANT
 	@Nonnull
 	private static IElementType parseSinglePrimary(final RBuilder builder)
 	{
+		if(builder.compare(tLAMBDA))
+		{
+			return parseLambda(builder);
+		}
 
 		// strings parsing
 		if(builder.compare(BNF.tSTRINGS_BEGINNINGS))
@@ -573,4 +593,54 @@ primary : primary tCOLON2 tCONSTANT
 		return RubyElementTypes.EMPTY_INPUT;
 	}
 
+
+	/*
+		lambda	: tLAMBDA f_larglist lambda_body
+		f_larglist	: '(' f_args opt_bv_decl ')' | f_args
+		lambda_body	: tLAMBEG compstmt '}' | keyword_do_LAMBDA bodystmt keyword_end
+	*/
+	@Nonnull
+	private static IElementType parseLambda(final RBuilder builder)
+	{
+		RMarker marker = builder.mark();
+		builder.match(tLAMBDA);
+
+		if(builder.compare(BNF.tLPARENS))
+		{
+			builder.advanceLexer();
+			RMarker argumentsMarker = builder.mark();
+			F_ARGS.parse(builder);
+			argumentsMarker.done(RubyElementTypes.FUNCTION_ARGUMENT_LIST);
+			builder.passEOLs();
+			builder.match(tRPAREN);
+		}
+		else if(!builder.compare(BNF.tCODE_BLOCK_BEG_TOKENS) && !builder.compare(kDO_COND))
+		{
+			RMarker argumentsMarker = builder.mark();
+			F_ARGS.parse(builder);
+			argumentsMarker.done(RubyElementTypes.COMMAND_ARGUMENT_LIST);
+		}
+
+		if(builder.compare(BNF.tLBRACES))
+		{
+			builder.advanceLexer();
+			builder.passEOLs();
+			COMPSTMT.parse(builder, tRBRACE);
+			builder.matchIgnoreEOL(tRBRACE);
+		}
+		else if(builder.compareAndEat(kDO) || builder.compareAndEat(kDO_COND))
+		{
+			builder.passEOLs();
+			COMPSTMT.parse(builder, kEND, kRESCUE, kELSE, kENSURE);
+			BODYSTMT.parseRescueElseEnsure(builder);
+			builder.matchIgnoreEOL(kEND);
+		}
+		else
+		{
+			builder.error(ErrorMsg.expected(tLBRACE));
+		}
+
+		marker.done(RubyElementTypes.LAMBDA);
+		return RubyElementTypes.LAMBDA;
+	}
 }

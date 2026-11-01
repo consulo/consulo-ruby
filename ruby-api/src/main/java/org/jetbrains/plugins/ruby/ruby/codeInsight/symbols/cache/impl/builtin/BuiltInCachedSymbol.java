@@ -32,6 +32,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache.CachedSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache.impl.AbstractLayeredCachedSymbol;
 import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkUtil;
 import consulo.logging.Logger;
+import consulo.virtualFileSystem.VirtualFile;
 import consulo.virtualFileSystem.VirtualFileManager;
 
 /**
@@ -73,15 +74,8 @@ public class BuiltInCachedSymbol extends AbstractLayeredCachedSymbol
                     ReadAction.run(() -> BuiltInCachedSymbol.super.updateFileSymbol());
 				}
 			};
-			if(manager.getProgressIndicator() != null)
-			{
-				runnable.run();
-			}
-			else
-			{
-				final String title = RBundle.message("cache.symbol.recreating.builtins.title");
-				manager.runProcessWithProgressSynchronously(runnable, title, false, myProject);
-			}
+			// built in the thread that asks, under its progress if any - never a modal dialog
+			runnable.run();
 		}
 	}
 
@@ -126,7 +120,17 @@ public class BuiltInCachedSymbol extends AbstractLayeredCachedSymbol
 		addSdkLoadPath();
 		if(!ApplicationManager.getApplication().isUnitTestMode())
 		{
-			LOG.assertTrue(VirtualFileManager.getInstance().findFileByUrl(myLoadUrl) != null, "Stubs are corrupted. Cannot find file: " + myLoadUrl);
+			if(VirtualFileManager.getInstance().findFileByUrl(myLoadUrl) == null)
+			{
+				// the stubs of an updated plugin are not in the VFS yet - the next cache update sees them
+				final int slash = myLoadUrl.lastIndexOf('/');
+				final VirtualFile stubsDirectory = slash > 0 ? VirtualFileManager.getInstance().findFileByUrl(myLoadUrl.substring(0, slash)) : null;
+				if(stubsDirectory != null)
+				{
+					stubsDirectory.refresh(true, false);
+				}
+				LOG.warn("Stubs are not found: " + myLoadUrl);
+			}
 		}
 		FileSymbolUtil.process(myFileSymbol, myLoadUrl, InterpretationMode.FULL, true);
 	}

@@ -1,0 +1,20 @@
+class A < 
+end-------
+Ruby file
+  Compound statement
+    Ruby:CLASS
+      PsiElement(class)('class')
+      PsiWhiteSpace(' ')
+      Class name
+        Constant
+          PsiElement(constant)('A')
+      PsiWhiteSpace(' ')
+      PsiElement(<)('<')
+      PsiWhiteSpace(' \n')
+      Superclass
+        PsiErrorElement:Expected: singleton
+          <empty list>
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')

@@ -27,13 +27,20 @@ import consulo.language.psi.PsiElement;
  * @author: Roman Chernyatchik
  * @date: 17.04.2007
  */
+import consulo.language.impl.psi.ASTWrapperPsiElement;
+import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.psi.RHTMLElementType;
+import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.psi.impl.rhtmlRoot.RHTMLRubyInjectionTagImpl;
+
 public class RHTMLPsiCreator
 {
 	@Nonnull
 	@SuppressWarnings({"UnusedDeclaration"})
 	public static PsiElement createElement(final ASTNode node)
 	{
-		//noinspection ConstantConditions
-		return null; //Shouldn't happen
+		if(node.getElementType() == RHTMLElementType.RHTML_XML_TAG)
+		{
+			return new RHTMLRubyInjectionTagImpl(node);
+		}
+		return new ASTWrapperPsiElement(node);
 	}
 }

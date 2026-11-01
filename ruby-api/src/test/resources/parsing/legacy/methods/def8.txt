@@ -1,0 +1,44 @@
+def fmt.%(x)
+    x ? super : "unknown"
+end
+-----------
+Ruby file
+  Compound statement
+    Ruby:SINGLETON_METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Class object
+          Identifier
+            PsiElement(identifier)('fmt')
+        PsiElement(.)('.')
+        Function name
+          PsiElement(%)('%')
+      PsiElement(()('(')
+      Function argument list
+        Argument
+          Identifier
+            PsiElement(identifier)('x')
+      PsiElement())(')')
+      PsiWhiteSpace('\n    ')
+      Body statement
+        Compound statement
+          Ternary expression
+            Condition
+              Identifier
+                PsiElement(identifier)('x')
+            PsiWhiteSpace(' ')
+            PsiElement(?)('?')
+            PsiWhiteSpace(' ')
+            Pseudo constant
+              PsiElement(super)('super')
+            PsiWhiteSpace(' ')
+            PsiElement(:)(':')
+            PsiWhiteSpace(' ')
+            Double quoted like string
+              PsiElement(double quoted like string beginning)('"')
+              PsiElement(string content)('unknown')
+              PsiElement(string end)('"')
+      PsiElement(end of line)('\n')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

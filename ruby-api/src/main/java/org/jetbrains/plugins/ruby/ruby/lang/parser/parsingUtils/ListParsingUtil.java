@@ -32,6 +32,8 @@ import consulo.language.ast.IElementType;
 
 public class ListParsingUtil implements RubyTokenTypes
 {
+	private static final consulo.language.ast.TokenSet CLOSING_BRACKETS = consulo.language.ast.TokenSet.create(tRPAREN, tRBRACK, tRBRACE);
+
 
 	public static int parseCommaDelimitedExpressions(final RBuilder builder, final ParsingMethod parsingMethod)
 	{
@@ -75,6 +77,13 @@ public class ListParsingUtil implements RubyTokenTypes
 		RMarker beforeLastCommaMarker = builder.mark(false);
 		while(builder.compareAndEat(tCOMMA))
 		{
+			// a trailing comma before the closing bracket
+			if(builder.compareIgnoreEOL(CLOSING_BRACKETS))
+			{
+				beforeLastCommaMarker.drop();
+				beforeLastCommaMarker = builder.mark(false);
+				break;
+			}
 			if(parsingMethod.parse(builder) != RubyElementTypes.EMPTY_INPUT)
 			{
 				count++;

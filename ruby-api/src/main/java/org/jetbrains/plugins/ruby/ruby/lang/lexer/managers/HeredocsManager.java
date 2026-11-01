@@ -37,9 +37,10 @@ public class HeredocsManager
 	private Queue<Heredoc> myHeredocs;
 
 	@NonNls
-	private static final String REPLACE_REGEX = "<<|-|\\\"|'";
+	private static final String REPLACE_REGEX = "<<|-|~|\\\"|'";
 	@NonNls
 	private static final String INDENTED_PREFIX = "<<-";
+	private static final String SQUIGGLY_PREFIX = "<<~";
 
 	public HeredocsManager(@Nonnull final RubyRawLexer lexer)
 	{
@@ -71,7 +72,7 @@ public class HeredocsManager
 
 	public static boolean isIndented(@Nonnull final String id)
 	{
-		return id.startsWith(INDENTED_PREFIX);
+		return id.startsWith(INDENTED_PREFIX) || id.startsWith(SQUIGGLY_PREFIX);
 	}
 
 	/**

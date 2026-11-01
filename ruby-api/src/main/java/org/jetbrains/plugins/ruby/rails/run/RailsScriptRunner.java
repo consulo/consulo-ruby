@@ -51,7 +51,7 @@ public class RailsScriptRunner
 	 */
 	public static void runRailsScriptInCosole(@Nonnull final Module module, @Nullable final ProcessListener processListener, @Nullable final Filter[] consoleFilters, @Nullable final AnAction[] userActions, final boolean runInBackgroundThread, @Nonnull final String consoleTitle, @Nonnull final CommandLineArgumentsProvider provider, @Nullable final RunContentDescriptorFactory descFactory)
 	{
-		runRailsScriptInCosole(RModuleUtil.getModuleOrJRubyFacetSdk(module), module, processListener, consoleFilters, userActions, runInBackgroundThread, consoleTitle, provider, descFactory);
+		runRailsScriptInCosole(RModuleUtil.getModuleSdk(module), module, processListener, consoleFilters, userActions, runInBackgroundThread, consoleTitle, provider, descFactory);
 	}
 
 	/**

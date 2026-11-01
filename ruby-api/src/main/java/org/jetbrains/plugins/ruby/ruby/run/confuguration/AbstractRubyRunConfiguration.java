@@ -21,6 +21,11 @@ import java.util.Map;
 import jakarta.annotation.Nonnull;
 
 import consulo.execution.RuntimeConfigurationException;
+import consulo.ruby.runtime.RubyRuntime;
+import consulo.ruby.runtime.RubyRuntimeProvider;
+import consulo.ruby.runtime.SdkRubyRuntime;
+import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkUtil;
+import consulo.logging.Logger;
 import consulo.execution.configuration.ConfigurationFactory;
 import consulo.execution.configuration.EnvironmentAware;
 import consulo.execution.configuration.LegacyRunConfigurationConverter;
@@ -51,6 +56,8 @@ import consulo.content.bundle.SdkTable;
 public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase implements LocatableConfiguration, AbstractRubyRunConfigurationParams, WorkingDirectoryAware,
 		EnvironmentAware
 {
+	private static final Logger LOG = Logger.getInstance(AbstractRubyRunConfiguration.class);
+
 	protected final static String SUGGESTED_NAME = RBundle.message("run.configuration.messages.suggested.name");
 
 	private static final String RUBY_ARGS = "RUBY_ARGS";
@@ -153,9 +160,23 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 		final Module module = getModule();
 		if(module != null)
 		{
-			return RModuleUtil.getModuleOrJRubyFacetSdk(module);
+			return RModuleUtil.getModuleSdk(module);
 		}
 		return null;
+	}
+
+	/**
+	 * @return what runs the configuration: the alternative SDK chosen for it, else the runtime of its module
+	 */
+	@Nullable
+	public RubyRuntime getRuntime()
+	{
+		if(shouldUseAlternativeSdk())
+		{
+			final Sdk sdk = getAlternativeSdk();
+			return RubySdkUtil.isKindOfRubySDK(sdk) ? new SdkRubyRuntime(sdk) : null;
+		}
+		return RubyRuntimeProvider.findRuntime(getModule());
 	}
 
 	@Override
@@ -255,7 +276,11 @@ public abstract class AbstractRubyRunConfiguration extends RunConfigurationBase 
 		}
 		catch(Exception e)
 		{
-			throw new RuntimeConfigurationException(e.getMessage());
+			if(e.getMessage() == null)
+			{
+				LOG.error(e);
+			}
+			throw new RuntimeConfigurationException(e.getMessage() != null ? e.getMessage() : e.toString());
 		}
 	}
 

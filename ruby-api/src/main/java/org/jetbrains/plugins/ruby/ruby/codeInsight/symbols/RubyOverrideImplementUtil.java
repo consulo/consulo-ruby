@@ -18,23 +18,26 @@ package org.jetbrains.plugins.ruby.ruby.codeInsight.symbols;
 
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 
-import com.intellij.java.language.psi.PsiMethod;
-import com.intellij.java.language.psi.PsiModifier;
-import com.intellij.java.language.psi.util.PsiUtil;
 import consulo.language.editor.generation.ClassMember;
 import consulo.language.psi.PsiElement;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.FileSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.data.Children;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.types.Context;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.types.CoreTypes;
+import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.methods.RMethod;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by IntelliJ IDEA.
@@ -46,7 +49,7 @@ public class RubyOverrideImplementUtil
 {
 	/*
 	 * Gathers override virtual elements for given virtual element
-	 * returns list of RPsiElement or PsiMethod
+	 * returns list of RPsiElement or foreign methods
 	 */
 	@Nonnull
 	public static List getOverridenElements(@Nullable final FileSymbol fileSymbol, @Nonnull final Symbol symbol, @Nullable final RPsiElement anchorElement)
@@ -56,7 +59,7 @@ public class RubyOverrideImplementUtil
 
 	/*
 	 * Gathers override virtual elements for given virtual element
-	 * returns list of RPsiElement or PsiMethod
+	 * returns list of RPsiElement or foreign methods
 	 */
 	@SuppressWarnings({"unchecked"})
 	@Nonnull
@@ -66,12 +69,11 @@ public class RubyOverrideImplementUtil
 		// we should add all the prototypes of overriden symbols
 		for(Symbol s : overridenSymbols)
 		{
-			if(s.getType() == Type.JAVA_METHOD)
+			if(s.getType() == Type.FOREIGN_METHOD)
 			{
-				final PsiElement element = ((JavaSymbol) s).getPsiElement();
-				assert element instanceof PsiMethod;
-				final PsiMethod method = (PsiMethod) element;
-				if(method.isValid() && PsiUtil.canBeOverriden(method) && !isAbstract(method))
+				final PsiElement method = ((ForeignSymbol) s).getPsiElement();
+				final RubyInteropProvider provider = RubyInterop.forElement(method);
+				if(method.isValid() && provider != null && provider.isOverridableMethod(method))
 				{
 					elements.add(method);
 				}
@@ -91,40 +93,26 @@ public class RubyOverrideImplementUtil
 		return elements;
 	}
 
-	/*
-	 * Gathers implemented Java methods
+	/**
+	 * Gathers the abstract foreign methods the overridden symbols implement
 	 */
 	@Nonnull
-	public static List<PsiMethod> getImplementedJavaMethods(@Nonnull final List<Symbol> overridenSymbols)
+	public static List<PsiElement> getImplementedForeignMethods(@Nonnull final List<Symbol> overridenSymbols)
 	{
-		final ArrayList<PsiMethod> implemented = new ArrayList<PsiMethod>();
-		// we should add all the prototypes of overriden symbols
+		final List<PsiElement> implemented = new ArrayList<PsiElement>();
 		for(Symbol s : overridenSymbols)
 		{
-			if(s.getType() == Type.JAVA_METHOD)
+			if(s.getType() == Type.FOREIGN_METHOD)
 			{
-				final PsiElement element = ((JavaSymbol) s).getPsiElement();
-				assert element instanceof PsiMethod;
-				final PsiMethod method = (PsiMethod) element;
-				if(method.isValid() && isAbstract(method))
+				final PsiElement method = ((ForeignSymbol) s).getPsiElement();
+				final RubyInteropProvider provider = RubyInterop.forElement(method);
+				if(method.isValid() && provider != null && provider.isAbstractMethod(method))
 				{
 					implemented.add(method);
 				}
 			}
 		}
 		return implemented;
-	}
-
-	/**
-	 * Checks if method is abstract or it`s a member of interface
-	 * It`s sucks, that rather often everyone has its own method for doing the same things in IDEA!
-	 *
-	 * @param method PsiMethod
-	 * @return true or false
-	 */
-	public static boolean isAbstract(@Nonnull final PsiMethod method)
-	{
-		return method.getModifierList().hasModifierProperty(PsiModifier.ABSTRACT) || method.getContainingClass().isInterface();
 	}
 
 	/*
@@ -170,6 +158,95 @@ public class RubyOverrideImplementUtil
 			}
 		}
 		return overridenSymbols;
+	}
+
+	/**
+	 * Gathers the methods of the superclasses and included modules the class may override: not defined by the class yet,
+	 * no constructors, foreign methods only when they are overridable
+	 */
+	@Nonnull
+	public static List<Symbol> getMethodsToOverride(@Nullable final FileSymbol fileSymbol, @Nonnull final Symbol classSymbol)
+	{
+		final Set<String> seenNames = new HashSet<String>();
+		for(Symbol own : classSymbol.getChildren(fileSymbol).getSymbolsOfTypes(Types.METHODS).getAll())
+		{
+			seenNames.add(own.getName());
+		}
+
+		final List<Symbol> methods = new ArrayList<Symbol>(SymbolUtil.getAllChildrenWithSuperClassesAndIncludes(fileSymbol, Context.INSTANCE, classSymbol, null).getSymbolsOfTypes(Types.METHODS).getAll());
+		Collections.reverse(methods);
+
+		final List<Symbol> result = new ArrayList<Symbol>();
+		for(Symbol method : methods)
+		{
+			final String name = method.getName();
+			if(name == null || seenNames.contains(name) || method.getParentSymbol() == classSymbol || RMethod.NEW.equals(name) || RMethod.INITIALIZE.equals(name) || isMetaClassMethod(method))
+			{
+				continue;
+			}
+			if(method.getType() == Type.FOREIGN_METHOD)
+			{
+				final PsiElement element = ((ForeignSymbol) method).getPsiElement();
+				final RubyInteropProvider provider = RubyInterop.forElement(element);
+				if(provider == null || !element.isValid() || !provider.isOverridableMethod(element))
+				{
+					continue;
+				}
+			}
+			seenNames.add(name);
+			result.add(method);
+		}
+		return result;
+	}
+
+	/**
+	 * Gathers the abstract foreign methods (e.g. of an included Java interface) the class does not define
+	 */
+	@Nonnull
+	public static List<Symbol> getMethodsToImplement(@Nullable final FileSymbol fileSymbol, @Nonnull final Symbol classSymbol)
+	{
+		final Children children = SymbolUtil.getAllChildrenWithSuperClassesAndIncludes(fileSymbol, Context.INSTANCE, classSymbol, null);
+
+		final Set<String> seenNames = new HashSet<String>();
+		for(Symbol method : children.getSymbolsOfTypes(Types.METHODS).getAll())
+		{
+			if(method.getType() != Type.FOREIGN_METHOD || !isAbstractForeignMethod(method))
+			{
+				seenNames.add(method.getName());
+			}
+		}
+
+		final List<Symbol> foreignMethods = new ArrayList<Symbol>(children.getSymbolsOfTypes(Type.FOREIGN_METHOD.asSet()).getAll());
+		Collections.reverse(foreignMethods);
+
+		final List<Symbol> result = new ArrayList<Symbol>();
+		for(Symbol method : foreignMethods)
+		{
+			final String name = method.getName();
+			if(name != null && !seenNames.contains(name) && isAbstractForeignMethod(method))
+			{
+				seenNames.add(name);
+				result.add(method);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * The instance methods of Class and Module come with the class object, its instances do not have them
+	 */
+	private static boolean isMetaClassMethod(@Nonnull final Symbol method)
+	{
+		final Symbol parent = method.getParentSymbol();
+		return parent != null && parent.getParentSymbol() != null && parent.getParentSymbol().getType() == Type.FILE
+				&& (CoreTypes.Class.equals(parent.getName()) || CoreTypes.Module.equals(parent.getName()));
+	}
+
+	private static boolean isAbstractForeignMethod(@Nonnull final Symbol method)
+	{
+		final PsiElement element = ((ForeignSymbol) method).getPsiElement();
+		final RubyInteropProvider provider = RubyInterop.forElement(element);
+		return provider != null && element.isValid() && provider.isAbstractMethod(element);
 	}
 
 	public static String classMembersToString(@Nonnull final List<ClassMember> list)

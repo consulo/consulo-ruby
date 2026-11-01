@@ -205,4 +205,24 @@ public class ContentManager extends ReadingManager
 			pos++;
 		}
 	}
+
+	/**
+	 * @param offset offset after the end of line
+	 * @return true if the next line goes on with a leading {@code .call} or {@code &.call}
+	 */
+	public boolean isLeadingDotAhead(final int offset)
+	{
+		int i = offset;
+		while(canReadAt(i) && TextUtil.isWhiteSpaceOrEol(safeReadAt(i)))
+		{
+			i++;
+		}
+		if(!canReadAt(i + 1))
+		{
+			return false;
+		}
+		final char c = safeReadAt(i);
+		final char next = safeReadAt(i + 1);
+		return c == '.' && next != '.' || c == '&' && next == '.';
+	}
 }

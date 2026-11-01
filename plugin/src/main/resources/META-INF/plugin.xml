@@ -23,20 +23,14 @@
     <vendor>JetBrains &amp; consulo.io</vendor>
     <resource-bundle>org.jetbrains.plugins.ruby.RBundle</resource-bundle>
     <depends>com.intellij.xml</depends>
-    <depends>consulo.java</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
+    <depends>consulo.dap</depends>
 
     <tags>
         <tag>custom.language</tag>
     </tags>
 
     <actions>
-        <action id="RIHelpAction" class="org.jetbrains.plugins.ruby.ruby.ri.RIHelpAction" text="RI search"
-                description="Searches a help for selected text using RDoc">
-            <keyboard-shortcut keymap="$default" first-keystroke="ctrl I"/>
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-        </action>
-
         <action id="org.jetbrains.plugins.ruby.rails.actions.navigation.SwitchToView"
                 class="org.jetbrains.plugins.ruby.rails.actions.navigation.SwitchToView" text="Switch to view"
                 description="Searches view for action in rails controller">
@@ -52,45 +46,9 @@
                 description="Searches controller action for partial view">
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt K"/>
         </action>
-        <group id="RAILS_POPUP" text="Rails..." description="Group of Rails generators" popup="false">
-            <add-to-group group-id="GenerateGroup" anchor="first"/>
-
-            <action id="org.jetbrains.plugins.ruby.rails.actions.generators.actions.special.GenerateActionAction"
-                    class="org.jetbrains.plugins.ruby.rails.actions.generators.actions.special.GenerateActionAction" text="Action"
-                    description="Generates action for controller"/>
-            <separator/>
-        </group>
-        <group id="GENERATORS_GROUP" class="org.jetbrains.plugins.ruby.rails.actions.generators.actions.GeneratorsActionGroup"
-               popup="false">
+        <action id="Ruby.Rails.Generate" class="consulo.ruby.impl.rails.RailsGenerateAction">
             <add-to-group group-id="NewGroup" anchor="first"/>
-        </group>
-        <group id="RAILS_POPUP_GENERATORS_GROUP" class="org.jetbrains.plugins.ruby.rails.actions.generators.actions.GeneratorsActionGroup"
-               popup="true" text="Generate...">
-            <add-to-group group-id="RAILS_POPUP" anchor="last"/>
-        </group>
-        <group id="RAKE_GROUP" class="org.jetbrains.plugins.ruby.rails.actions.rake.RakeActionGroup" text="Rake" description="Rake actions">
-            <add-to-group group-id="RunContextPopupGroup" anchor="last"/>
-        </group>
-
-        <group id="ROR_TOOLS" text="ROR Plugin" popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
-
-            <action id="org.jetbrains.plugins.ruby.rails.actions.generators.ReloadGeneratorsAction"
-                    class="org.jetbrains.plugins.ruby.rails.actions.generators.ReloadGeneratorsAction"
-                    text="Reload Generators"
-                    description="Reloads list of available generators"/>
-
-
-            <action id="org.jetbrains.plugins.ruby.rails.actions.rake.ReloadRakeTasksAction"
-                    class="org.jetbrains.plugins.ruby.rails.actions.rake.ReloadRakeTasksAction" text="Reload Rake tasks"
-                    description="Reloads list of available rake tasks"/>
-
-            <separator/>
-
-            <action id="org.jetbrains.plugins.ruby.rails.actions.execution.RunRailsScriptAction"
-                    class="org.jetbrains.plugins.ruby.rails.actions.execution.RunRailsScriptAction"
-                    text="Run Rails script..."
-                    description="Runs scripts from ./script folder"/>
-        </group>
+        </action>
     </actions>
 </consulo-plugin>

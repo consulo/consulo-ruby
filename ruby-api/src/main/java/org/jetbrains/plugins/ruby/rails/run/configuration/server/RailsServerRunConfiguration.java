@@ -46,7 +46,6 @@ import consulo.execution.configuration.fragment.RunConfigurationFragment;
 import consulo.module.Module;
 import consulo.project.Project;
 import consulo.util.lang.StringUtil;
-import consulo.util.lang.text.StringTokenizer;
 
 /**
  * Created by IntelliJ IDEA.
@@ -123,7 +122,7 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 
 	/**
 	 * @param module Ruby or Java Module
-	 * @return Server script path corresponding to specified module : {rails application home dir}/script/server
+	 * @return the rails command of the application: {rails application home dir}/bin/rails
 	 */
 	@Nullable
 	public static String getServerScriptPathByModule(final Module module)
@@ -133,7 +132,7 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 		{
 			return null;
 		}
-		return VirtualFileUtil.buildSystemIndependentPath(homeDir, RailsConstants.SERVER_SCRIPT);
+		return VirtualFileUtil.buildSystemIndependentPath(homeDir, RailsConstants.RAILS_SCRIPT);
 	}
 
 	@Override
@@ -225,31 +224,20 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 	{
 		super.validateConfiguration(isExecution);
 
-		RailsRunConfigurationUtil.inspectRailsSDK(this, isExecution);
+		RailsRunConfigurationUtil.inspectRailsApplication(this, isExecution);
 		inspectPort(isExecution);
 		inspectIPAddr(isExecution);
 	}
 
+	/**
+	 * Rails binds to any address, host name or IPv6 address the system resolves
+	 */
 	private void inspectIPAddr(final boolean isExecution) throws Exception
 	{
-		final String msg = "run.configuration.script.ip.bad.format";
-		final String ip_str = getIPAddr();
-		final consulo.util.lang.text.StringTokenizer st = new StringTokenizer(ip_str, ".", true);
-		if(st.countTokens() != 7)
+		if(getIPAddr().isBlank())
 		{
-			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message(msg), isExecution);
+			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("run.configuration.script.ip.bad.format"), isExecution);
 		}
-		// first byte
-		checkNumberFormat(isExecution, st.nextToken(), true, msg);
-		checkPoint(isExecution, st.nextToken());
-		// secont byte
-		checkNumberFormat(isExecution, st.nextToken(), true, msg);
-		checkPoint(isExecution, st.nextToken());
-		// third byte
-		checkNumberFormat(isExecution, st.nextToken(), true, msg);
-		checkPoint(isExecution, st.nextToken());
-		// fourth byte
-		checkNumberFormat(isExecution, st.nextToken(), true, msg);
 	}
 
 	private void inspectPort(final boolean isExecution) throws Exception
@@ -258,7 +246,7 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 		{
 			final String port_str = getPort();
 
-			checkNumberFormat(isExecution, port_str, false, "run.configuration.script.port.bad.format");
+			checkNumberFormat(isExecution, port_str, "run.configuration.script.port.bad.format");
 
 			try
 			{
@@ -272,7 +260,7 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 		}
 	}
 
-	private void checkNumberFormat(final boolean isExecution, final String port_str, final boolean isByte, final String msg) throws Exception
+	private void checkNumberFormat(final boolean isExecution, final String port_str, final String msg) throws Exception
 	{
 		Integer port = null;
 		try
@@ -284,19 +272,10 @@ public class RailsServerRunConfiguration extends RubyRunConfiguration implements
 			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message(msg), isExecution);
 		}
 		assert port != null;
-		if(port < 0 || port > (isByte ? 255 : 65535))
+		if(port < 0 || port > 65535)
 		{
 			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message(msg), isExecution);
 		}
-	}
-
-	private void checkPoint(final boolean isExecution, final String port_str) throws Exception
-	{
-		if(port_str.equals("."))
-		{
-			return;
-		}
-		RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("run.configuration.script.ip.bad.format"), isExecution);
 	}
 
 	@Override

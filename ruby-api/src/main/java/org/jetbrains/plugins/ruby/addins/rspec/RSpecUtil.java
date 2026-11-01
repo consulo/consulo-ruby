@@ -17,6 +17,8 @@
 package org.jetbrains.plugins.ruby.addins.rspec;
 
 import consulo.content.bundle.Sdk;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.util.PsiTreeUtil;
 import consulo.logging.Logger;
 import consulo.virtualFileSystem.VirtualFile;
 import consulo.virtualFileSystem.VirtualFileManager;
@@ -27,6 +29,8 @@ import org.jetbrains.plugins.ruby.RBundle;
 import org.jetbrains.plugins.ruby.addins.gems.GemUtil;
 import org.jetbrains.plugins.ruby.addins.gems.GemsRunner;
 import org.jetbrains.plugins.ruby.rails.RailsConstants;
+import org.jetbrains.plugins.ruby.ruby.lang.psi.iterators.RBlockCall;
+import org.jetbrains.plugins.ruby.ruby.lang.psi.methodCall.RCall;
 import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
 import org.jetbrains.plugins.ruby.ruby.run.Output;
 import org.jetbrains.plugins.ruby.ruby.run.Runner;
@@ -180,37 +184,7 @@ public class RSpecUtil
 
  
    /* Requires root privilegies
-
-    public static void installRSpecGem(final Module module, final Sdk sdk) {
-       final Project project = module.getProject();
-
-        try {
-            final ProcessListener listener = new ProcessAdapter() {
-                public void processTerminated(final ProcessEvent event) {
-                    RModuleUtil.synchronizeFSChanged();
-                }
-            };
-
-            final String[] params =
-                    new String[]{RailsUtil.getGemExecutablePath(sdk),
-                                 RailsConstants.INSTALL_PARAMETER, RailsConstants.RSPEC_GEM_NAME};
-
-            final RubyScriptRunnerArgumentsProvider provider =
-                    new RubyScriptRunnerArgumentsProvider(params, null, null);
-
-            final String title = RBundle.message("rails.plugins.install.process.title", module.getName());
-            ConsoleRunner.run(project, listener,
-                              new Filter[]{new RFileLinksFilter(module)},
-                              null, true, title, null, provider);
-        } catch (Exception exp) {
-            String errorMessage = GeneratorsUtil.filterIoExceptionMessage(exp.getMessage());
-            if (errorMessage == null || errorMessage.length() == 0) {
-                errorMessage = exp.toString();
-            }
-
-            Messages.showErrorDialog(module.getProject(), errorMessage, RBundle.message("rails.plugins.install.error.title"));
-        }
-    }*/
+*/
 
 	@Nonnull
 	public static String getRailsSpecFolderPathOrUrl(@Nonnull final String railsAppRootPathOrUlr)
@@ -241,6 +215,45 @@ public class RSpecUtil
 	{
 		//noinspection SimplifiableIfStatement
 		return file != null && !file.isDirectory() && isFileWithRSpecTestFileName(file);
+	}
+
+	private static final java.util.Set<String> EXAMPLE_AND_GROUP_METHODS = java.util.Set.of(
+			"describe", "context", "feature", "xdescribe", "xcontext", "fdescribe", "fcontext",
+			"it", "specify", "example", "scenario", "its", "xit", "xspecify", "xexample", "xscenario", "fit", "fspecify", "fexample", "focus");
+
+	/**
+	 * @return the innermost example or example group (<code>describe</code>, <code>it</code>, ...) around the element
+	 */
+	@Nullable
+	public static RBlockCall findExampleOrGroup(@Nonnull final PsiElement element)
+	{
+		RBlockCall blockCall = PsiTreeUtil.getParentOfType(element, RBlockCall.class, false);
+		while(blockCall != null && !isExampleOrGroup(blockCall))
+		{
+			blockCall = PsiTreeUtil.getParentOfType(blockCall, RBlockCall.class, true);
+		}
+		return blockCall;
+	}
+
+	/**
+	 * @return true for an example or an example group: <code>describe "..." do</code>, <code>RSpec.describe X do</code>, <code>it "..." do</code>
+	 */
+	public static boolean isExampleOrGroup(@Nonnull final RBlockCall blockCall)
+	{
+		if(!(blockCall.getCall() instanceof RCall call))
+		{
+			return false;
+		}
+		final String command = call.getCommand();
+		return EXAMPLE_AND_GROUP_METHODS.contains(command.substring(command.lastIndexOf('.') + 1));
+	}
+
+	/**
+	 * @return true if the folder or one of its subfolders holds a spec file
+	 */
+	public static boolean containsSpecFiles(@Nonnull final VirtualFile folder)
+	{
+		return !consulo.virtualFileSystem.util.VirtualFileUtil.iterateChildrenRecursively(folder, null, file -> !isRSpecTestFile(file));
 	}
 
 	public static boolean isFileWithRSpecTestFileName(VirtualFile file)

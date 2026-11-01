@@ -16,10 +16,13 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.paramDefs;
 
+import consulo.language.psi.util.PsiTreeUtil;
+import org.jetbrains.plugins.ruby.ruby.lang.psi.expressions.RAssocList;
+import java.util.ArrayList;
+import java.util.List;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.assoc.RAssoc;
-import org.jetbrains.plugins.ruby.ruby.lang.psi.basicTypes.RSymbol;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.expressions.RListOfExpressions;
 import consulo.language.psi.PsiElement;
 
@@ -40,17 +43,25 @@ public class ResolvingParamDependency implements ParamDependency<PsiElement>
 	public PsiElement getValue(final ParamContext context)
 	{
 		RListOfExpressions args = context.getCall().getCallArguments();
+		List<RAssoc> assocs = new ArrayList<RAssoc>();
 		for(RPsiElement element : args.getElements())
 		{
-			if(element instanceof RAssoc)
+			if(element instanceof RAssoc assoc)
 			{
-				final RAssoc rAssoc = (RAssoc) element;
-				RPsiElement key = rAssoc.getKey();
+				assocs.add(assoc);
+			}
+			else if(element instanceof RAssocList)
+			{
+				assocs.addAll(PsiTreeUtil.getChildrenOfTypeAsList(element, RAssoc.class));
+			}
+		}
+		for(RAssoc rAssoc : assocs)
+		{
+			{
 				RPsiElement value = rAssoc.getValue();
-				if(key instanceof RSymbol && value != null)
+				if(value != null)
 				{
-					String s = key.getText();
-					if(s.equals(myKey))
+					if(myKey.equals(rAssoc.getKeyName()))
 					{
 						ParamContext dependencyContext = new ParamContext(value, context.getCall(), context.getIndex(), myKey);
 						ParamDef dependencyParamDef = ParamDefUtil.getParamDef(dependencyContext);

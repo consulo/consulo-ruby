@@ -86,7 +86,7 @@ public class RailsRunConfigurationType implements ConfigurationType
 	}
 
 	@Nonnull
-	public RailsServerRunConfigurationFactory getWEBrickFactory()
+	public RailsServerRunConfigurationFactory getServerFactory()
 	{
 		return myRailsServerFactory;
 	}

@@ -182,6 +182,10 @@ rspec.run.configuration.tests.dialog.rb.allInFolder:
   text: '&All specs in folder'
 rspec.run.configuration.tests.dialog.rb.file:
   text: '&Spec script'
+rspec.run.configuration.tests.dialog.rb.example:
+  text: '&Example or group'
+rspec.run.configuration.tests.dialog.components.example.line:
+  text: 'Line:'
 rspec.run.configuration.tests.form.testtype.title:
   text: 'Spec:'
 rspec.run.configuration.tests.coloured.output:
@@ -1290,6 +1294,12 @@ refactoring.introduce.variable.scope.error:
   text: Name clashes with local variable in scope
 refactoring.introduce.variable.resword.error:
   text: Name cannot be a resword
+refactoring.introduce.variable.name:
+  text: 'Name:'
+refactoring.introduce.variable.invalid.name:
+  text: Name is not a valid local variable name
+refactoring.introduce.variable.replace.all:
+  text: Replace all occurrences ({0})
 refactoring.override.methods.title:
   text: Choose methods to override
 refactoring.implement.java.methods.title:
@@ -1334,3 +1344,57 @@ error.module.ror.valid.expected:
   text: 'Ruby, Rails or Java module with JRuby Facet is expected, but was found: {0}'
 common.msgs.fetching.version:
   text: Fetching... Please wait.
+bundler.system.name:
+  text: Bundler
+bundler.status.resolving:
+  text: Resolving the gems of the Gemfile...
+bundler.status.rake.tasks:
+  text: Reading the rake tasks...
+bundler.error.no.gemfile:
+  text: There is no Gemfile in {0}
+bundler.error.no.ruby:
+  text: No Ruby interpreter is found. Configure a Ruby SDK
+bundler.error.probe.failed:
+  text: 'Cannot resolve the Gemfile: {0}'
+bundler.error.gems.missing:
+  text: 'Some gems are not installed, run the ''install'' task: {0}'
+bundler.error.cancelled:
+  text: The Bundler task was cancelled
+bundler.error.exit.code:
+  text: '{0} exited with code {1}'
+bundler.task.install:
+  text: Install the gems of the Gemfile
+bundler.task.update:
+  text: Update the gems of the Gemfile
+bundler.settings.sdk:
+  text: 'Ruby SDK:'
+bundler.settings.sdk.auto:
+  text: <auto>
+new.project.group:
+  text: Ruby
+new.project.application:
+  text: Ruby Application
+new.project.gem:
+  text: Ruby Gem
+new.project.rails:
+  text: Ruby on Rails Application
+new.project.progress:
+  text: Creating the Ruby project...
+new.project.error:
+  text: 'Cannot create the Ruby project: {0}'
+rails.generate.action.text:
+  text: Rails Generator…
+rails.generate.action.description:
+  text: Runs a generator of the Rails application
+rails.generate.progress:
+  text: Reading the Rails generators…
+rails.generate.choose.title:
+  text: Rails Generator
+rails.generate.choose.text:
+  text: 'Generator:'
+rails.generate.arguments.text:
+  text: 'Arguments of {0} (for example: Post title:string body:text):'
+rails.generate.error.no.generators:
+  text: 'Cannot read the generators of the Rails application: {0}'
+rails.generate.console.title:
+  text: rails generate {0}

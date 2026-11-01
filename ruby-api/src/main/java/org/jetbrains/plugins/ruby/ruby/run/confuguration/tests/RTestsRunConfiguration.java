@@ -207,9 +207,15 @@ public class RTestsRunConfiguration extends AbstractRubyRunConfiguration impleme
 		{
 			final String className = getTestQualifiedClassName().trim();
 			final VirtualFile script = LocalFileSystem.getInstance().findFileByPath(getTestScriptPath());
-			assert script != null;
-			final RClass rClass = RCacheUtil.getClassByNameInScriptInRubyTestMode(className, getProject(), GlobalSearchScope.allScope(getProject()), script, fSWrapper);
-			assert rClass != null;
+			final RClass rClass = script == null ? null : RCacheUtil.getClassByNameInScriptInRubyTestMode(className, getProject(), GlobalSearchScope.allScope(getProject()), script, fSWrapper);
+			if(rClass == null)
+			{
+				RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("run.configuration.test.class.not.exists"), isExecution);
+			}
+			if(RTestUnitUtil.hasDeclarativeTest(rClass, methodName))
+			{
+				return;
+			}
 
 			final Pair<Symbol, FileSymbol> pair = SymbolUtil.getSymbolByContainerRubyTestMode(rClass, fSWrapper);
 

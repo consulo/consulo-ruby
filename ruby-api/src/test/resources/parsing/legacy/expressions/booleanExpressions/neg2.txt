@@ -1,0 +1,13 @@
+not 
+! 
+-------------
+Ruby file
+  Compound statement
+    Boolean negative expression
+      PsiElement(not)('not')
+      PsiWhiteSpace(' \n')
+      Boolean negative expression
+        PsiElement(!)('!')
+        PsiErrorElement:Expected: expression
+          <empty list>
+  PsiWhiteSpace(' \n')

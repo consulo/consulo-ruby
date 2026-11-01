@@ -111,7 +111,7 @@ DECIMAL_INTEGER_LITERAL =           {DIGITS}+
 
 OCTAL_DIGIT =                       [0-7]
 OCTAL_DIGITS =                      {OCTAL_DIGIT} | {OCTAL_DIGIT}"_"{OCTAL_DIGIT}
-OCTAL_INTEGER_LITERAL =             [0-7]{OCTAL_DIGITS}*
+OCTAL_INTEGER_LITERAL =             [0-7]{OCTAL_DIGITS}* | "0"[Oo]{OCTAL_DIGITS}+
 
 BINARY_DIGIT =                      [0-1]
 BINARY_DIGITS =                     {BINARY_DIGIT}|{BINARY_DIGIT}"_"{BINARY_DIGIT}
@@ -151,6 +151,8 @@ FLOAT_LITERAL =                 {FLOATING_POINT_LITERAL1} |
                                 {FLOATING_POINT_LITERAL2}
 
 NUMBER =                        {INTEGER_LITERAL} | {FLOAT_LITERAL}
+
+NUMBER_SUFFIX =                 "r" | "i" | "ri"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////// varibles ///////////////////////////////////////////////////////////////////////////////////////////
@@ -199,7 +201,7 @@ $-w        True if option -w is set.
 GVAR =                          "$"{CID} | "$*" | "$$" | "$?" | "$!" | "$@" |
                                 "$/" | "$\\" | "$;" | "$," | "$." | "$=" | "$:" |
                                 "$<" | "$>" | "$\"" | "$-" |
-                                "$-0" | "$-a" | "$-d" | "$-F" | "$-i" | "$-I" | "$-K" | "$-l" | "$-p" | "$-v" | "$-w"
+                                "$-" [a-zA-Z0-9_]
 
 
 /*
@@ -250,7 +252,7 @@ ESCAPE_SEQUENCE =           "\\a" | "\\b" | "\\e" | "\\f" | "\\n" | "\\r" | "\\s
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////// others //////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-HEREDOC_ID =                "-"? ( {CID} | "\"" [^\\\"]+ "\""  | "'" [^\\']+ "'" )
+HEREDOC_ID =                [-~]? ( {CID} | "\"" [^\\\"]+ "\""  | "'" [^\\']+ "'" )
 HEREDOC =                   "<<" {HEREDOC_ID}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -635,13 +637,13 @@ HEREDOC =                   "<<" {HEREDOC_ID}
                                             return myTM.process(tIDENTIFIER);
                                         }
 
-"__FILE__"                              {   return myTM.process(kFILE); }
-"__LINE__"                              {   return myTM.process(kLINE); }
-"true"                                  {   return myTM.process(kTRUE); }
-"false"                                 {   return myTM.process(kFALSE); }
-"super"                                 {   return myTM.process(kSUPER); }
-"nil"                                   {   return myTM.process(kNIL); }
-"self"                                  {   return myTM.process(kSELF); }
+"__FILE__"                              {   return myTM.process(myTM.isMethodNameAfterDot() ? tIDENTIFIER : kFILE); }
+"__LINE__"                              {   return myTM.process(myTM.isMethodNameAfterDot() ? tIDENTIFIER : kLINE); }
+"true"                                  {   return myTM.process(myTM.isMethodNameAfterDot() ? tIDENTIFIER : kTRUE); }
+"false"                                 {   return myTM.process(myTM.isMethodNameAfterDot() ? tIDENTIFIER : kFALSE); }
+"super"                                 {   return myTM.process(myTM.isMethodNameAfterDot() ? tIDENTIFIER : kSUPER); }
+"nil"                                   {   return myTM.process(myTM.isMethodNameAfterDot() ? tIDENTIFIER : kNIL); }
+"self"                                  {   return myTM.process(myTM.isMethodNameAfterDot() ? tIDENTIFIER : kSELF); }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -669,6 +671,13 @@ HEREDOC =                   "<<" {HEREDOC_ID}
 /////////////////////// Variables  /////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+({IDENTIFIER} | {CONSTANT} | {FID}) ":" / [^:]
+                                        {   if (myTM.isLabelAllowed()){
+                                                return myTM.process(tLABEL);
+                                            }
+                                            yypushback(1);
+                                            return myTM.process(myTM.getWordType(yytext()));
+                                        }
 {FID}                                   {   return myTM.process(tFID);  }
 
 {IDENTIFIER}                            {   return myTM.process(tIDENTIFIER); }
@@ -703,6 +712,10 @@ HEREDOC =                   "<<" {HEREDOC_ID}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 {INTEGER_LITERAL}                       {   return myTM.process(tINTEGER); }
 {FLOAT_LITERAL}                         {   return myTM.process(tFLOAT); }
+({DECIMAL_INTEGER_LITERAL} | {HEX_INTEGER_LITERAL} | {OCTAL_INTEGER_LITERAL} | {BINARY_INTEGER_LITERAL}) {NUMBER_SUFFIX} / [^a-zA-Z0-9_]
+                                        {   return myTM.process(tINTEGER); }
+{FLOAT_LITERAL} {NUMBER_SUFFIX} / [^a-zA-Z0-9_]
+                                        {   return myTM.process(tFLOAT); }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// Strings /////////////////////////////////////////////////////////////////////////////////////////
@@ -737,6 +750,27 @@ HEREDOC =                   "<<" {HEREDOC_ID}
 "%x"{DELIMITER_CHAR}                    {   if (myTM.stringAllowed()){
                                                 mySM.toStringLikeState(IN_STRING_STATE, myCM.safeReadAt(2));
                                                 return myTM.process(tXSTRING_BEG);
+                                            }
+                                            yypushback(2);
+                                            return myTM.process(tPERC);
+                                        }
+"%I"{DELIMITER_CHAR}                    {   if (myTM.stringAllowed()){
+                                                mySM.toStringLikeState(IN_WORDS_STATE, myCM.safeReadAt(2));
+                                                return myTM.process(tQWORDS_BEG);
+                                            }
+                                            yypushback(2);
+                                            return myTM.process(tPERC);
+                                        }
+"%i"{DELIMITER_CHAR}                    {   if (myTM.stringAllowed()){
+                                                mySM.toStringLikeState(IN_NI_WORDS_STATE, myCM.safeReadAt(2));
+                                                return myTM.process(tWORDS_BEG);
+                                            }
+                                            yypushback(2);
+                                            return myTM.process(tPERC);
+                                        }
+"%s"{DELIMITER_CHAR}                    {   if (myTM.stringAllowed()){
+                                                mySM.toStringLikeState(IN_NI_STRING_STATE, myCM.safeReadAt(2));
+                                                return myTM.process(tSINGLE_QUOTED_STRING_BEG);
                                             }
                                             yypushback(2);
                                             return myTM.process(tPERC);
@@ -807,6 +841,12 @@ HEREDOC =                   "<<" {HEREDOC_ID}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// Bit operators ///////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+"&."                                    {   if (myTM.isExprEnd()){
+                                                return myTM.process(tANDDOT);
+                                            }
+                                            yypushback(1);
+                                            return myTM.process(myTM.unaryAllowed(false) ? tAMPER : tBIT_AND);
+                                        }
 "&"                                     {   return myTM.process(myTM.unaryAllowed(TextUtil.isWhiteSpaceOrEol(myCM.safeReadAt(1))) ? tAMPER : tBIT_AND); }
 "|"                                     {   return myTM.process(myTM.isExprEnd() ? tBIT_OR : tPIPE); }
 "^"                                     {   return myTM.process(tXOR); }
@@ -889,6 +929,7 @@ HEREDOC =                   "<<" {HEREDOC_ID}
                                         }
 
 "+"                                     {   return myTM.process(myTM.unaryAllowed(TextUtil.isWhiteSpaceOrEol(myCM.safeReadAt(1))) ? tUPLUS : tPLUS); }
+"->"                                    {   return myTM.process(tLAMBDA); }
 "-"                                     {   return myTM.process(myTM.unaryAllowed(TextUtil.isWhiteSpaceOrEol(myCM.safeReadAt(1))) ? tUMINUS : tMINUS); }
 
 
@@ -897,7 +938,7 @@ HEREDOC =                   "<<" {HEREDOC_ID}
 "%"                                     {   return myTM.process(tPERC); }
 
 
-"**"                                    {   return myTM.process(tPOW); }
+"**"                                    {   return myTM.process(myTM.unaryAllowed(TextUtil.isWhiteSpaceOrEol(myCM.safeReadAt(2))) ? tDSTAR : tPOW); }
 "~"                                     {   return myTM.process(tTILDE); }
 
 
@@ -943,6 +984,11 @@ HEREDOC =                   "<<" {HEREDOC_ID}
                                             if (mySM.isAfterHeredoc()){
                                                 mySM.toState(IN_HEREDOC_STATE);
                                                 return myTM.process(tEOL);
+                                            }
+// foo
+//   .bar - the call goes on with a leading dot
+                                            if (myCM.isLeadingDotAhead(yylength())){
+                                                return myTM.process(tWHITE_SPACE);
                                             }
                                             return myTM.process(tEOL);
                                         }

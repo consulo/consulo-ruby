@@ -16,8 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.usages;
 
-import com.intellij.java.language.psi.PsiMethod;
-import com.intellij.java.language.psi.PsiParameter;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
+import consulo.language.psi.PsiElement;
 import jakarta.annotation.Nonnull;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.LastSymbolStorage;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.RubyOverrideImplementUtil;
@@ -49,6 +50,7 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.variables.RConstant;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.variables.RFid;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.variables.RIdentifier;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -104,26 +106,15 @@ public class UsageAnalyzer
 								if(methodSymbol != null)
 								{
 									final List<Symbol> overridenSymbols = RubyOverrideImplementUtil.getOverridenSymbols(fileSymbol, methodSymbol);
-									// At first we look for implemented methods
-									for(PsiMethod element : RubyOverrideImplementUtil.getImplementedJavaMethods(overridenSymbols))
+									// At first we look for implemented methods, then for overriden foreign methods
+									final List<Object> foreignMethods = new ArrayList<Object>(RubyOverrideImplementUtil.getImplementedForeignMethods(overridenSymbols));
+									foreignMethods.addAll(RubyOverrideImplementUtil.getOverridenElements(fileSymbol, methodSymbol, null, overridenSymbols));
+									for(Object element : foreignMethods)
 									{
-										final PsiParameter[] params = element.getParameterList().getParameters();
-										if(number < params.length)
+										final RubyInteropProvider provider = element instanceof PsiElement foreignElement ? RubyInterop.forElement(foreignElement) : null;
+										if(provider != null && number < provider.getParameterCount((PsiElement) element))
 										{
 											return null;
-										}
-									}
-									// Then we look for overriden PsiMethods
-									for(Object element : RubyOverrideImplementUtil.getOverridenElements(fileSymbol, methodSymbol, null, overridenSymbols))
-									{
-										if(element instanceof PsiMethod)
-										{
-											final PsiParameter[] params = ((PsiMethod) element).getParameterList().getParameters();
-											if(number < params.length)
-											{
-												// JRuby Java method typed access moved to consulo-jruby module
-												return null;
-											}
 										}
 									}
 								}

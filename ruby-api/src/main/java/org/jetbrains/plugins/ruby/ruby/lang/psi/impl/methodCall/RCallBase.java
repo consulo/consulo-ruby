@@ -31,7 +31,7 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.util.PsiTreeUtil;
 import consulo.navigation.ItemPresentation;
 import consulo.virtualFileSystem.VirtualFile;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.resolve.JavaReferencesBuilder;
+import consulo.ruby.interop.RubyInterop;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.RExtend;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.RImportJavaClass;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.RInclude;
@@ -59,7 +59,7 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.RPsiElementBase;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.holders.utils.RFileUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.methodCall.RCall;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.methodCall.RubyCallType;
-import org.jetbrains.plugins.ruby.ruby.presentation.JavaClassPackagePresentationUtil;
+import org.jetbrains.plugins.ruby.ruby.presentation.ForeignImportPresentationUtil;
 import org.jetbrains.plugins.ruby.ruby.presentation.RFieldAttrPresentationUtil;
 import consulo.language.ast.ASTNode;
 import consulo.language.psi.stub.StubElement;
@@ -72,7 +72,7 @@ import consulo.ui.image.Image;
  * User: oleg
  * Date: 14.08.2006
  */
-public abstract class RCallBase extends RPsiElementBase<StubElement> implements RPsiElement, RCall, RRequire, RLoad, RInclude, RExtend, RFieldAttr
+public abstract class RCallBase extends RPsiElementBase<StubElement> implements RPsiElement, RCall, RRequire, RLoad, RInclude, RExtend, RFieldAttr, RImportJavaClass, RIncludeJavaPackage
 {
 	public RCallBase(ASTNode astNode)
 	{
@@ -151,7 +151,9 @@ public abstract class RCallBase extends RPsiElementBase<StubElement> implements 
 				final RPsiElement arg = args.get(0);
 				if(arg instanceof RBaseString)
 				{
-					final List<PsiReference> refs = JavaReferencesBuilder.createReferences(this, (RBaseString) arg);
+					final RBaseString string = (RBaseString) arg;
+					final List<PsiReference> refs = new ArrayList<PsiReference>();
+					RubyInterop.forEach(provider -> refs.addAll(provider.createStringReferences(this, string)));
 					return refs.toArray(new PsiReference[refs.size()]);
 				}
 			}
@@ -309,7 +311,7 @@ public abstract class RCallBase extends RPsiElementBase<StubElement> implements 
 				getCallType() == RubyCallType.INCLUDE_CLASS_CALL ||
 				getCallType() == RubyCallType.INCLUDE_PACKAGE_CALL)
 		{
-			return JavaClassPackagePresentationUtil.getIncludeIcon();
+			return ForeignImportPresentationUtil.getIncludeIcon();
 		}
 		return null;
 	}
@@ -326,7 +328,7 @@ public abstract class RCallBase extends RPsiElementBase<StubElement> implements 
 				type == StructureType.CALL_INCLUDE_CLASS ||
 				type == StructureType.CALL_INCLUDE_PACKAGE)
 		{
-			return JavaClassPackagePresentationUtil.getIncludeJavaPresentation(this);
+			return ForeignImportPresentationUtil.getIncludeJavaPresentation(this);
 		}
 		return null;
 	}
@@ -369,10 +371,22 @@ public abstract class RCallBase extends RPsiElementBase<StubElement> implements 
 	public List<RVirtualName> getVirtualNames()
 	{
 		final StructureType type = getType();
-		if(type == StructureType.CALL_INCLUDE || type == StructureType.CALL_EXTEND)
+		if(type == StructureType.CALL_INCLUDE || type == StructureType.CALL_EXTEND || type == StructureType.CALL_IMPORT)
 		{
 			return RCallBaseUtil.gatherVirtualNames(this);
 		}
 		return Collections.emptyList();
+	}
+
+	@Override
+	@Nullable
+	public String getQualifiedName()
+	{
+		final StructureType type = getType();
+		if(type == StructureType.CALL_INCLUDE_CLASS || type == StructureType.CALL_INCLUDE_PACKAGE)
+		{
+			return RCallBaseUtil.getJavaQualifiedName(this);
+		}
+		return null;
 	}
 }

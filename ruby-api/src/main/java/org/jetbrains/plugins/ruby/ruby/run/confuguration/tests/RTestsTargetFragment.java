@@ -26,7 +26,6 @@ import consulo.ui.util.FormBuilder;
 import consulo.util.lang.StringUtil;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.AbstractRubyRunConfiguration.TestType;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationFragmentUtil;
-import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -86,8 +85,8 @@ public class RTestsTargetFragment extends AbstractRTestsTargetFragment<RTestsRun
         private final TextBox myClassBox;
         private final TextBox myMethodBox;
 
-        private @Nullable Label myClassLabel;
-        private @Nullable Label myMethodLabel;
+        private final Label myClassLabel;
+        private final Label myMethodLabel;
 
         @RequiredUIAccess
         private TestCaseTargetEditor(Project project, Disposable parent) {
@@ -95,13 +94,15 @@ public class RTestsTargetFragment extends AbstractRTestsTargetFragment<RTestsRun
 
             myClassBox = TextBox.create();
             myMethodBox = TextBox.create();
+            myClassLabel = Label.create(RubyApiLocalize.runConfigurationTestsMessagesClassName());
+            myMethodLabel = Label.create(RubyApiLocalize.runConfigurationTestsMessagesMethodName());
         }
 
         @RequiredUIAccess
         @Override
         protected void addExtraRows(FormBuilder builder) {
-            myClassLabel = RubyRunConfigurationFragmentUtil.addRow(builder, RubyApiLocalize.runConfigurationTestsMessagesClassName(), myClassBox);
-            myMethodLabel = RubyRunConfigurationFragmentUtil.addRow(builder, RubyApiLocalize.runConfigurationTestsMessagesMethodName(), myMethodBox);
+            builder.addLabeled(myClassLabel, myClassBox);
+            builder.addLabeled(myMethodLabel, myMethodBox);
         }
 
         @RequiredUIAccess

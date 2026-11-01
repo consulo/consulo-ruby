@@ -5,12 +5,10 @@
 
     <depends>consulo.ruby</depends>
     <depends>consulo.java</depends>
+    <depends optional="true">org.jetbrains.idea.maven</depends>
 
     <tags>
         <tag>language.extension</tag>
     </tags>
 
-    <extensions defaultExtensionNs="com.intellij">
-        <addTo.listOfElements name="rdocToolwindowModuleExtensionList">jruby</addTo.listOfElements>
-    </extensions>
 </consulo-plugin>

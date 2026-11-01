@@ -18,7 +18,6 @@ package consulo.jruby.impl.module.extension;
 
 import consulo.annotation.component.ExtensionImpl;
 import consulo.jruby.icon.JRubyIconGroup;
-import consulo.jruby.module.extension.JRubyModuleExtension;
 import consulo.localize.LocalizeValue;
 import consulo.module.content.layer.ModuleExtensionProvider;
 import consulo.module.content.layer.ModuleRootLayer;

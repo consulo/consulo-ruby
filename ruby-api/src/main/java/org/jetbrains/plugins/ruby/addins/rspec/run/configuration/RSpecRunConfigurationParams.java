@@ -28,21 +28,12 @@ public interface RSpecRunConfigurationParams extends AbstractRTestsRunConfigurat
 {
 	public String getSpecArgs();
 
-	public String getCustomSpecsRunnerPath();
-
-	public boolean shouldUseColoredOutput();
-
-	public boolean shouldUseCustomSpecRunner();
-
-	public boolean shouldRunSpecSeparately();
+	/**
+	 * @return the line of the example or group to run in the spec file
+	 */
+	public int getExampleLine();
 
 	public void setSpecArgs(String specArgs);
 
-	public void setCustomSpecsRunnerPath(String specsRunnerPath);
-
-	public void setShouldUseColoredOutput(boolean enabled);
-
-	public void setShouldUseCustomSpecRunner(boolean useCustomSpecRunner);
-
-	public void setShouldRunSpecSeparately(boolean shouldRunSpecSeparately);
+	public void setExampleLine(int exampleLine);
 }

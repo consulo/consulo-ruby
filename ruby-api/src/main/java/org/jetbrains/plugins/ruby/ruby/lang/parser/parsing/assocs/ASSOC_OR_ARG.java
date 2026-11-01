@@ -21,6 +21,7 @@ import jakarta.annotation.Nonnull;
 import org.jetbrains.plugins.ruby.ruby.lang.lexer.RubyTokenTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.RubyElementTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.arg.ARG;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.commands.CALL_ARGS;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.ErrorMsg;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RBuilder;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RMarker;
@@ -43,7 +44,7 @@ public class ASSOC_OR_ARG implements RubyTokenTypes
 			return RubyElementTypes.EMPTY_INPUT;
 		}
 
-		if(builder.compareAndEat(tASSOC))
+		if(builder.compareAndEat(tASSOC) || isStringKey(result) && builder.compareAndEat(tCOLON))
 		{
 			if(ARG.parse(builder) == RubyElementTypes.EMPTY_INPUT)
 			{
@@ -59,6 +60,42 @@ public class ASSOC_OR_ARG implements RubyTokenTypes
 
 	public static IElementType parse(final RBuilder builder)
 	{
+		if(builder.compare(tLABEL))
+		{
+			return parseLabel(builder);
+		}
+		if(builder.compare(tDSTAR))
+		{
+			return CALL_ARGS.parseHashToArguments(builder);
+		}
 		return parseWithLeadArg(builder, builder.mark(), ARG.parse(builder));
+	}
+
+	/**
+	 * {@code key: value}, or {@code key:} alone - the value is the variable or method of the same name
+	 */
+	private static IElementType parseLabel(final RBuilder builder)
+	{
+		RMarker marker = builder.mark();
+		builder.match(tLABEL);
+		ARG.parse(builder);
+		marker.done(RubyElementTypes.ASSOC);
+		return RubyElementTypes.ASSOC;
+	}
+
+	/**
+	 * {@code "key": value}
+	 */
+	private static boolean isStringKey(final IElementType result)
+	{
+		return result == RubyElementTypes.STRING || result == RubyElementTypes.NI_STRING || result == RubyElementTypes.STRINGS;
+	}
+
+	/**
+	 * @return true if the result of an argument is allowed after a {@code key => value} pair
+	 */
+	public static boolean isAllowedAfterAssoc(final IElementType result)
+	{
+		return result == RubyElementTypes.ASSOC || result == RubyElementTypes.ARRAY_TO_ARGS || result == RubyElementTypes.BLOCK_TO_ARG;
 	}
 }

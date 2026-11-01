@@ -14,7 +14,6 @@
  */
 package org.jetbrains.plugins.ruby.ruby.lang.psi.dataFlow.types;
 
-import com.intellij.java.language.psi.PsiType;
 import consulo.application.progress.ProgressManager;
 import jakarta.annotation.Nonnull;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.references.RPsiPolyvariantReference;
@@ -27,7 +26,6 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.types.CoreTypes;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.types.RType;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.types.RTypeUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.types.impl.MessageImpl;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.types.impl.RJavaTypeImpl;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.usages.*;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlFlow.Instruction;

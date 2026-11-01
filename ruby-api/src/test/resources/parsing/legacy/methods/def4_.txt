@@ -1,0 +1,29 @@
+def foo a,b=c
+end
+-------
+Ruby file
+  Compound statement
+    Ruby:METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Function name
+          PsiElement(identifier)('foo')
+      PsiWhiteSpace(' ')
+      Command argument list
+        Argument
+          Identifier
+            PsiElement(identifier)('a')
+        PsiElement(,)(',')
+        Predefined argument
+          Identifier
+            PsiElement(identifier)('b')
+          PsiElement(=)('=')
+          Identifier
+            PsiElement(identifier)('c')
+      PsiElement(end of line)('\n')
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

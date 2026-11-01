@@ -65,8 +65,4 @@ public interface RubyComponents
 	final String RUBY_REFERENCE_PROVIDER_LOADER = "RubyReferenceProviderLoader";
 	//    @NonNls final String RUBY_MODULE_SETTINGS_STORAGE =     "RUBY_MODULE_SETTINGS_STORAGE";
 
-	@NonNls
-	final String JRUBY_SDK_TYPE = "JRubySdkType";
-	@NonNls
-	final String JRUBY_FACET_LISTENER = "JRubyFacetListener";
 }

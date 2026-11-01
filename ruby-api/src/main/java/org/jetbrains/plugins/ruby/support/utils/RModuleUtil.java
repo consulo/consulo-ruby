@@ -47,7 +47,7 @@ public class RModuleUtil
 	private static final Logger LOG = Logger.getInstance(RModuleUtil.class.getName());
 
 	/**
-	 * Returns all the modules with Ruby support(including JRuby) in given project
+	 * Returns all the modules with Ruby support in given project
 	 *
 	 * @param project Project to search modules in
 	 * @return Array of found modules
@@ -69,7 +69,7 @@ public class RModuleUtil
 
 	/**
 	 * @param module some module
-	 * @return True if module has Ruby(including JRuby) support
+	 * @return True if module has Ruby support
 	 */
 	public static boolean hasRubySupport(@Nullable final Module module)
 	{
@@ -78,10 +78,10 @@ public class RModuleUtil
 
 	/**
 	 * @param module Module to get JDK for
-	 * @return Ruby Jdk selected for given module or JRuby facet jdk if found
+	 * @return Ruby SDK selected for given module
 	 */
 	@Nullable
-	public static Sdk getModuleOrJRubyFacetSdk(@Nullable final Module module)
+	public static Sdk getModuleSdk(@Nullable final Module module)
 	{
 		if(module == null)
 		{
@@ -172,7 +172,7 @@ public class RModuleUtil
 
 	/**
 	 * @param module Some module
-	 * @return If module is Ruby module or with JRuby support returns it's settings, otherwize nil
+	 * @return If module is Ruby module returns it's settings, otherwize nil
 	 */
 	@Nullable
 	public static RSupportPerModuleSettings getRubySupportSettings(@Nonnull final Module module)

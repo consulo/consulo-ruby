@@ -16,14 +16,11 @@
 
 package org.jetbrains.plugins.ruby.ruby.run.confuguration.tests;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import jakarta.annotation.Nullable;
 
-import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.ruby.lang.RubyFileType;
-import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunCommandLineState;
 import consulo.process.ExecutionException;
 import consulo.process.cmd.GeneralCommandLine;
 import consulo.execution.runner.ExecutionEnvironment;
@@ -36,8 +33,11 @@ import consulo.execution.runner.ExecutionEnvironment;
  */
 public class RTestsRunCommandLineState extends AbstractRTestsCommandLineState
 {
-	public static final String TEMP_FILE_PREFIX = "irplrunconf";
-	public static final String TESTS_CHOOSE_METHOD_PATAMETER = "--name ";
+	private static final String REPORTER = "consulo_test_reporter.rb";
+	/**
+	 * Requires the test files of a folder: {@code -- <folder> <mask>}
+	 */
+	private static final String REQUIRE_FOLDER_SCRIPT = "Dir.glob(File.join(ARGV.shift, ARGV.shift)).sort.each { |f| require File.expand_path(f) unless File.directory?(f) }";
 
 	private final RTestsRunConfiguration myConfig;
 
@@ -47,167 +47,67 @@ public class RTestsRunCommandLineState extends AbstractRTestsCommandLineState
 		myConfig = config;
 	}
 
-
+	@Override
 	public GeneralCommandLine createCommandLine() throws ExecutionException
 	{
 		final GeneralCommandLine commandLine = createTestDefaultCmdLine(myConfig);
 
+		final Path root = addBundler(commandLine, myConfig);
+		if(root != null)
+		{
+			for(String directory : new String[]{"test", "lib"})
+			{
+				if(Files.isDirectory(root.resolve(directory)))
+				{
+					commandLine.addParameter("-I" + root.resolve(directory));
+				}
+			}
+		}
+		commandLine.addParameter("-r" + getTestingScript(REPORTER));
+
 		switch(myConfig.getTestType())
 		{
 			case ALL_IN_FOLDER:
-				try
-				{
-					// ruby.exe $TEMP_FILE
-					createRunInFolderConfScript();
-					commandLine.addParameter(tempFile.getPath());
-				}
-				catch(IOException e)
-				{
-					tempFile = null;
-					throw new ExecutionException(RBundle.message("run.configuration.test.cant.create.tempory.file"), e);
-				}
+				commandLine.addParameters("-e", REQUIRE_FOLDER_SCRIPT, "--", myConfig.getTestsFolderPath(), myConfig.getTestFileMask());
 				break;
 			case TEST_CLASS:
-				// ruby.exe $TEMP_FILE
-				try
+				commandLine.addParameter(myConfig.getTestScriptPath());
+				if(isTestUnit(myConfig.getTestScriptPath()))
 				{
-					createRunClassConfScript();
-					commandLine.addParameter(tempFile.getPath());
+					commandLine.addParameters("-t", myConfig.getTestQualifiedClassName());
 				}
-				catch(IOException e)
+				else
 				{
-					tempFile = null;
-					throw new ExecutionException(RBundle.message("run.configuration.test.cant.create.tempory.file"), e);
+					commandLine.addParameters("-n", "/^" + myConfig.getTestQualifiedClassName() + "#/");
 				}
 				break;
 			case TEST_METHOD:
-				//Method
-				//ruby [$file_path] --name [$test_name]
-				commandLine.addParameter(myConfig.getTestScriptPath());
-				RubyRunCommandLineState.addParams(commandLine, TESTS_CHOOSE_METHOD_PATAMETER + myConfig.getTestMethodName());
+				commandLine.addParameters(myConfig.getTestScriptPath(), "-n", myConfig.getTestMethodName());
 				break;
 			case TEST_SCRIPT:
-				//Script
-				//ruby [$file_path]
 				commandLine.addParameter(myConfig.getTestScriptPath());
 				break;
 		}
 		return commandLine;
 	}
 
-	private void createRunInFolderConfScript() throws IOException
+	/**
+	 * test-unit selects a test case with -t, minitest by a name pattern
+	 */
+	private static boolean isTestUnit(@Nullable final String script)
 	{
-		tempFile = File.createTempFile(TEMP_FILE_PREFIX, "." + RubyFileType.INSTANCE.getDefaultExtension());
-		tempFile.deleteOnExit();
-		// Write to temp file
-		final StringBuilder buff = new StringBuilder();
-		buff.append("# Copyright 2000-2007 JetBrains s.r.o.\n");
-		buff.append("#\n");
-		buff.append("# Licensed under the Apache License, Version 2.0 (the \"License\");\n");
-		buff.append("# you may not use this file except in compliance with the License.\n");
-		buff.append("# You may obtain a copy of the License at\n");
-		buff.append("# \n");
-		buff.append("# http://www.apache.org/licenses/LICENSE-2.0\n");
-		buff.append("# \n");
-		buff.append("# Unless required by applicable law or agreed to in writing, software\n");
-		buff.append("# distributed under the License is distributed on an \"AS IS\" BASIS,\n");
-		buff.append("# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n");
-		buff.append("# See the License for the specific language governing permissions and\n");
-		buff.append("# limitations under the License.\n");
-		buff.append("\n");
-		buff.append("FOLDER_PATH = \"");
-		buff.append(myConfig.getTestsFolderPath());
-		buff.append("\"\n");
-		buff.append("SEARCH_MASK = \"");
-		buff.append(myConfig.getTestFileMask());
-		buff.append("\" # **/*.rb\n");
-		buff.append("SEPARATOR = \"=========================================\"\n");
-		buff.append("puts \"Loading files.... \"\n");
-		buff.append("puts SEPARATOR\n");
-		buff.append("i = 1\n");
-		buff.append("Dir[\"#{FOLDER_PATH}/#{SEARCH_MASK}\"].each { |testCase|\n");
-		buff.append("      next if File.directory?(testCase)\n");
-		buff.append("      begin\n");
-		buff.append("            require testCase\n");
-		buff.append("            puts \"#{i}. #{testCase}:1\"\n");
-		buff.append("            i+=1\n");
-		buff.append("      rescue Exception => e\n");
-		buff.append("            puts \"Fail to load: #{testCase}:1\\n      Exception message: #{e}\\n        #{e.backtrace.join(\"\\n        \")}\"\n");
-		buff.append("      end\n");
-		buff.append("}\n");
-		buff.append("puts \"#{i-1} files were loaded.\"\n");
-		buff.append("puts SEPARATOR\n");
-		buff.append("puts \"Searching test suites...\"\n");
-		buff.append("\n");
-		buff.append("i = 1\n");
-		buff.append("elapsed_time = 0\n");
-		buff.append("test_count = 0\n");
-		buff.append("assertion_count = 0\n");
-		buff.append("failure_count = 0\n");
-		buff.append("error_count = 0\n");
-		buff.append("require 'test/unit'\n");
-		buff.append("\n");
-		buff.append("ObjectSpace.each_object { |obj|\n");
-		buff.append("      if (obj.kind_of?(Class) && obj.ancestors.include?(Test::Unit::TestCase) && obj != Test::Unit::TestCase)\n");
-		buff.append("            require 'test/unit/ui/console/testrunner' if i == 1\n");
-		buff.append("            puts SEPARATOR\n");
-		buff.append("            puts \"Test suite \\##{i}: #{obj}\"\n");
-		buff.append("            i+=1\n");
-		buff.append("            puts SEPARATOR\n");
-		buff.append("            begin_time = Time.now\n");
-		buff.append("            result =  Test::Unit::UI::Console::TestRunner.run(obj)\n");
-		buff.append("            elapsed_time += Time.now - begin_time\n");
-		buff.append("            test_count += result.run_count\n");
-		buff.append("            assertion_count += result.assertion_count\n");
-		buff.append("            error_count += result.error_count\n");
-		buff.append("            failure_count += result.failure_count\n");
-		buff.append("      end\n");
-		buff.append("}\n");
-		buff.append("puts SEPARATOR\n");
-		buff.append("puts \"#{i-1} test suites, #{test_count} tests, #{assertion_count} assertions, #{failure_count} failures, #{error_count} errors\"\n");
-		buff.append("puts \"Finished in #{elapsed_time} seconds.\"");
-		buff.append("\n");
-		buff.append("at_exit do\n");
-		buff.append("  Test::Unit.run = true;\n");
-		buff.append("end");
-
-		final BufferedWriter out = new BufferedWriter(new FileWriter(tempFile));
-		out.write(buff.toString());
-		out.close();
-	}
-
-	private void createRunClassConfScript() throws IOException
-	{
-		tempFile = File.createTempFile(TEMP_FILE_PREFIX, "." + RubyFileType.INSTANCE.getDefaultExtension());
-		tempFile.deleteOnExit();
-
-		final StringBuilder buff = new StringBuilder();
-		buff.append("# Copyright 2000-2007 JetBrains s.r.o.\n");
-		buff.append("#\n");
-		buff.append("# Licensed under the Apache License, Version 2.0 (the \"License\");\n");
-		buff.append("# you may not use this file except in compliance with the License.\n");
-		buff.append("# You may obtain a copy of the License at\n");
-		buff.append("# \n");
-		buff.append("# http://www.apache.org/licenses/LICENSE-2.0\n");
-		buff.append("# \n");
-		buff.append("# Unless required by applicable law or agreed to in writing, software\n");
-		buff.append("# distributed under the License is distributed on an \"AS IS\" BASIS,\n");
-		buff.append("# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n");
-		buff.append("# See the License for the specific language governing permissions and\n");
-		buff.append("# limitations under the License.\n");
-		buff.append("\n");
-		buff.append("require '");
-		buff.append(myConfig.getTestScriptPath());
-		buff.append("'\n");
-		buff.append("require 'test/unit/ui/console/testrunner'\n");
-		buff.append("Test::Unit::UI::Console::TestRunner.run(");
-		buff.append(myConfig.getTestQualifiedClassName());
-		buff.append(")");
-		// Write to temp file
-		final BufferedWriter out = new BufferedWriter(new FileWriter(tempFile));
-		out.write(buff.toString());
-		out.close();
+		if(script == null)
+		{
+			return false;
+		}
+		try
+		{
+			final String text = Files.readString(Path.of(script));
+			return text.contains("test/unit") || text.contains("Test::Unit::TestCase");
+		}
+		catch(IOException e)
+		{
+			return false;
+		}
 	}
 }
-
-

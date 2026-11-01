@@ -147,7 +147,7 @@ public class RHTMLFileImpl extends PsiFileImpl implements RHTMLFile
 	}
 
 	@Override
-	public boolean isJRubyEnabled()
+	public boolean isInteropEnabled()
 	{
 		return false;
 	}

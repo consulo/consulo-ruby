@@ -52,10 +52,13 @@
 						<dependency>com.intellij.properties</dependency>
 						<dependency>consulo.java</dependency>
 						<dependency>org.jetbrains.plugins.yaml</dependency>
+						<dependency>consulo.dap</dependency>
+						<dependency>org.jetbrains.idea.maven</dependency>
 					</dependencies>
 					<execution>
 						<pluginDirectories>
 							<pluginDirectory>${project.basedir}/../consulo-jruby/target/consulo-plugin-extracted</pluginDirectory>
+							<pluginDirectory>${project.basedir}/../consulo-ruby-on-rails/target/consulo-plugin-extracted</pluginDirectory>
 						</pluginDirectories>
 					</execution>
 					<packaging>
@@ -81,6 +84,12 @@
 			<artifactId>consulo.ruby-ruby.api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-language-editor-refactoring-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>${project.groupId}</groupId>
@@ -90,7 +99,7 @@
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>consulo.java</artifactId>
+			<artifactId>consulo.dap.api</artifactId>
 			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
@@ -104,6 +113,47 @@
 			<groupId>consulo</groupId>
 			<artifactId>consulo-file-template-api</artifactId>
 			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-project-ui-view-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-execution-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-execution-debug-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-external-system-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-module-creation-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>consulo</groupId>
+			<artifactId>consulo-module-ui-api</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>

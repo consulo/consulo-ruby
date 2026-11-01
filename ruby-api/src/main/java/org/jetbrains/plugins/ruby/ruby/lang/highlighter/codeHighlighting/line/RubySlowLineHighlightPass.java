@@ -16,7 +16,6 @@
 
 package org.jetbrains.plugins.ruby.ruby.lang.highlighter.codeHighlighting.line;
 
-import com.intellij.java.language.psi.PsiMethod;
 import consulo.application.ApplicationManager;
 import consulo.application.progress.ProgressIndicator;
 import consulo.application.progress.ProgressManager;
@@ -118,8 +117,8 @@ public class RubySlowLineHighlightPass extends AbstractRubyHighlighterPass
 			else
 			{
 				// We don`t show implement markers if overriden markers list isn`t empty
-				// Adding JRuby implement markers
-				final List<PsiMethod> methods = RubyOverrideImplementUtil.getImplementedJavaMethods(overridenSymbols);
+				// Adding implement markers of foreign methods
+				final List<PsiElement> methods = RubyOverrideImplementUtil.getImplementedForeignMethods(overridenSymbols);
 				if(!methods.isEmpty())
 				{
 					myLineMarkers.add(new RubyGutterInfo(RubyGutterInfo.Mode.IMPLEMENT, element.getProject(), symbol, methods, element.getTextOffset()));

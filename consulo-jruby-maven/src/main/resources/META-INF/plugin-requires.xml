@@ -1,0 +1,5 @@
+<consulo-plugin-requires>
+    <plugins>
+        <plugin>org.jetbrains.idea.maven</plugin>
+    </plugins>
+</consulo-plugin-requires>

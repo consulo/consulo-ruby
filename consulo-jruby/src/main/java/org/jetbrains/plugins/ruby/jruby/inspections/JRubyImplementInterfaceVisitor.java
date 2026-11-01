@@ -26,10 +26,8 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil;
 import org.jetbrains.plugins.ruby.ruby.inspections.RubyInspectionVisitor;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.controlStructures.classes.RClass;
-import consulo.language.editor.generation.ClassMember;
 import consulo.language.editor.inspection.ProblemsHolder;
-import consulo.component.ProcessCanceledException;
-import rb.implement.ImplementHandler;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.RubyOverrideImplementUtil;
 
 /**
  * Created by IntelliJ IDEA.
@@ -40,12 +38,9 @@ import rb.implement.ImplementHandler;
 public class JRubyImplementInterfaceVisitor extends RubyInspectionVisitor
 {
 
-	protected ImplementHandler myHandler;
-
 	public JRubyImplementInterfaceVisitor(final ProblemsHolder holder)
 	{
 		super(holder);
-		// myHandler = (ImplementHandler) RubyLanguage.INSTANCE.getImplementMethodsHandler();
 	}
 
 	@Override
@@ -58,19 +53,12 @@ public class JRubyImplementInterfaceVisitor extends RubyInspectionVisitor
 		final Symbol symbol = SymbolUtil.getSymbolByContainer(fileSymbol, rClass);
 		if(symbol != null)
 		{
-			try
+			final List<Symbol> methods = RubyOverrideImplementUtil.getMethodsToImplement(fileSymbol, symbol);
+			if(!methods.isEmpty())
 			{
-				final List<ClassMember> methods = myHandler.create_implement_members(symbol);
-				if(!methods.isEmpty())
-				{
-					final String message = RBundle.message("inspection.implement.interface.class.should.implement.method") + methods.get(0).getText();
-					//noinspection ConstantConditions
-					registerProblem(rClass.getClassName(), message, new JRubyImplementInterfaceFix(rClass.getLastChild(), symbol));
-				}
-			}
-			catch(Exception e)
-			{
-				throw new ProcessCanceledException();
+				final String message = RBundle.message("inspection.implement.interface.class.should.implement.method") + methods.get(0).getName();
+				//noinspection ConstantConditions
+				registerProblem(rClass.getClassName(), message, new JRubyImplementInterfaceFix(rClass.getLastChild()));
 			}
 		}
 	}

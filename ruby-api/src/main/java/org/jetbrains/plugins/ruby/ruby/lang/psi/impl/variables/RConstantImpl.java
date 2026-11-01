@@ -143,7 +143,7 @@ public class RConstantImpl extends RNamedElementBase implements RConstant
 		final RReference ref = RReferenceNavigator.getReferenceByRightPart(this);
 		final PsiReference psiRef = ref != null ? ref.getReference() : new RConstantReference(this);
 		final Symbol symbol = ResolveUtil.resolveToSymbol(forceFileSymbolUpdate(), psiRef);
-		return symbol != null && (symbol.getType() == Type.CONSTANT || symbol.getType() == Type.JAVA_FIELD);
+		return symbol != null && (symbol.getType() == Type.CONSTANT || symbol.getType() == Type.FOREIGN_FIELD);
 	}
 
 	@Override

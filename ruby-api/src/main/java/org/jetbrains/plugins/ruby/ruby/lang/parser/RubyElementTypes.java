@@ -103,6 +103,15 @@ public interface RubyElementTypes
 	IElementType ASSOC_LIST = new RubyElementType("Assoc list");
 	IElementType ASSOC = new RubyElementType("Assoc");
 
+	IElementType KEYWORD_ARGUMENT = new RubyElementType("Keyword argument");
+	IElementType KEYWORD_REST_ARGUMENT = new RubyElementType("Keyword rest argument");
+	IElementType FORWARD_ARGUMENT = new RubyElementType("Forward argument");
+	IElementType LAMBDA = new RubyElementType("Lambda");
+	IElementType PATTERN = new RubyElementType("Pattern");
+	IElementType PATTERN_GUARD = new RubyElementType("Pattern guard");
+	IElementType PATTERN_MATCH = new RubyElementType("Pattern match");
+	IElementType IN_CASE = new RubyElementType("In case");
+
 	// identifier, constant, etc
 	IElementType IDENTIFIER = new RubyElementType("Identifier");
 	IElementType CONSTANT = new RubyElementType("Constant");

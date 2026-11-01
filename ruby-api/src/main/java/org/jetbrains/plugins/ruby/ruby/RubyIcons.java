@@ -39,15 +39,15 @@ public interface RubyIcons
 	final Image RUBY_PARAMETER_NODE = PlatformIconGroup.nodesParameter();
 	final Image RUBY_VARIABLE_NODE = PlatformIconGroup.nodesVariable();
 	final Image RUBY_MODULE_NODE = RubyApiIconGroup.rubyNodesModule();
-	final Image RUBY_CONSTANT_NODE = RubyApiIconGroup.rubyNodesConstant();
-	final Image RUBY_NOT_DEFINED_NODE = RubyApiIconGroup.rubyNodesNot_defined();
+	final Image RUBY_CONSTANT_NODE = PlatformIconGroup.nodesConstant();
+	final Image RUBY_NOT_DEFINED_NODE = RubyApiIconGroup.rubyNodesNotdefined();
 
-	final Image RUBY_OBJECT_CLASS_NODE = RubyApiIconGroup.rubyNodesInclude();
-	final Image RUBY_GLOBAL_VAR_NODE = RubyApiIconGroup.rubyNodesVariabledollar();
-	final Image RUBY_FIELD_NODE = RubyApiIconGroup.rubyNodesVariableat();
+	final Image RUBY_OBJECT_CLASS_NODE = PlatformIconGroup.nodesClass();
+	final Image RUBY_GLOBAL_VAR_NODE = RubyApiIconGroup.rubyNodesVariable();
+	final Image RUBY_FIELD_NODE = PlatformIconGroup.nodesField();
 
-	final Image RUBY_INCLUDE_NODE = RubyApiIconGroup.rubyNodesInclude();
-	final Image RUBY_ALIAS_NODE = RubyApiIconGroup.rubyNodesAlias();
+	final Image RUBY_INCLUDE_NODE = RubyApiIconGroup.rubyNodesModule();
+	final Image RUBY_ALIAS_NODE = PlatformIconGroup.nodesMethod();
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//// Node attributes
@@ -68,9 +68,9 @@ public interface RubyIcons
 
 	final Image RUBY_RUN_CONFIGURATION_FOLDER = RUBY_ICON;
 
-	final Image RUBY_RUN_CONFIGURATION_SCRIPT = RubyApiIconGroup.rubyConfigurationRuby_script();
-	final Image RTEST_RUN_CONFIGURATION = RubyApiIconGroup.rubyConfigurationRuby_test_unit();
-	final Image RAILS_SERVER_RUN_CONFIGURATION = RubyApiIconGroup.rubyConfigurationRun_conf_server();
+	final Image RUBY_RUN_CONFIGURATION_SCRIPT = RubyApiIconGroup.rubyRubyscript();
+	final Image RTEST_RUN_CONFIGURATION = RubyApiIconGroup.testunitTestunitrunconfiguration();
+	final Image RAILS_SERVER_RUN_CONFIGURATION = RubyApiIconGroup.railsRails();
 
 
 	final Image RUBY_RUNNER_SHOW_CMDLINE = PlatformIconGroup.actionsPreview();

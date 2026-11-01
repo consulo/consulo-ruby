@@ -36,9 +36,9 @@ public class MailersLayer extends AbstractRailsLayeredCachedSymbol
 {
 	private String myLayerRootUrl;
 
-	public MailersLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isJRubyEnabled)
+	public MailersLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isInteropEnabled)
 	{
-		super(FileSymbolType.LIBS_LAYER, project, module, sdk, isJRubyEnabled);
+		super(FileSymbolType.LIBS_LAYER, project, module, sdk, isInteropEnabled);
 
 		assert module != null;
 

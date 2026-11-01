@@ -74,6 +74,8 @@ public interface RCall extends RPossibleCall, RStructuralElement, RExpression
 	@NonNls
 	final String IMPORT_COMMAND = "import";
 	@NonNls
+	final String JAVA_IMPORT_COMMAND = "java_import";
+	@NonNls
 	final String INCLUDE_CLASS_COMMAND = "include_class";
 	@NonNls
 	final String INCLUDE_PACKAGE_COMMAND = "include_package";

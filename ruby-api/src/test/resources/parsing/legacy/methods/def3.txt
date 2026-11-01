@@ -1,0 +1,25 @@
+def method_name ()
+    expr2
+end
+-------------
+Ruby file
+  Compound statement
+    Ruby:METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Function name
+          PsiElement(identifier)('method_name')
+      PsiWhiteSpace(' ')
+      PsiElement(()('(')
+      Function argument list
+        <empty list>
+      PsiElement())(')')
+      PsiWhiteSpace('\n    ')
+      Body statement
+        Compound statement
+          Identifier
+            PsiElement(identifier)('expr2')
+      PsiElement(end of line)('\n')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

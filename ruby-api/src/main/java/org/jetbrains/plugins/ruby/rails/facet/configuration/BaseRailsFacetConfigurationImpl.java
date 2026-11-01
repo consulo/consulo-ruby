@@ -23,10 +23,6 @@ import consulo.util.xml.serializer.WriteExternalException;
 import org.jdom.Element;
 
 import jakarta.annotation.Nullable;
-import org.jetbrains.plugins.ruby.rails.actions.generators.GeneratorsUtil;
-import org.jetbrains.plugins.ruby.rails.actions.rake.RakeUtil;
-import org.jetbrains.plugins.ruby.rails.actions.rake.task.RakeTask;
-import org.jetbrains.plugins.ruby.support.utils.RModuleUtil;
 import org.jetbrains.plugins.ruby.support.utils.VirtualFileUtil;
 import consulo.module.Module;
 import consulo.content.bundle.Sdk;
@@ -52,14 +48,8 @@ public class BaseRailsFacetConfigurationImpl implements BaseRailsFacetConfigurat
 
 	private StandardRailsPaths myRailsPaths;
 
-	// This object is build on every RakeCommands changes. Represents logical structure of Rake commands.
-	private RakeTask myRootRakeTask;
-
-	// Generators
-	private String[] myGenerators;
 	private Module myModule;
 
-	// Is being used only for RakeTasks, Generators regenerating after SDK changing
 	private Sdk mySdk;
 
 
@@ -104,41 +94,6 @@ public class BaseRailsFacetConfigurationImpl implements BaseRailsFacetConfigurat
 		return myRailsPaths;
 	}
 
-	@Override
-	public void loadGenerators(final boolean forceRegenerate, @Nullable final Sdk sdk)
-	{
-		assert myModule != null;
-		GeneratorsUtil.loadGeneratorsList(forceRegenerate, myModule.getProject(), sdk, myModule.getName(), this);
-	}
-
-	@Override
-	public String[] getGenerators()
-	{
-		return myGenerators;
-	}
-
-
-	public void setGenerators(final String[] generators)
-	{
-		myGenerators = generators;
-	}
-
-	@Override
-	public void loadRakeTasks(final boolean forceRegenerate, final Sdk sdk)
-	{
-		RakeUtil.loadRakeTasksTree(forceRegenerate, myModule.getProject(), sdk, myModule.getName(), this);
-	}
-
-	@Override
-	public RakeTask getRakeTasks()
-	{
-		return myRootRakeTask;
-	}
-
-	public void setRakeTasks(final RakeTask rootTask)
-	{
-		myRootRakeTask = rootTask;
-	}
 
 	@Override
 	public void setModule(@Nonnull final Module uncommitedModule)
@@ -158,17 +113,6 @@ public class BaseRailsFacetConfigurationImpl implements BaseRailsFacetConfigurat
 		return myModule;
 	}
 
-	@Override
-	public void reloadGenerators()
-	{
-		loadGenerators(true, RModuleUtil.getModuleOrJRubyFacetSdk(myModule));
-	}
-
-	@Override
-	public void reloadRakeTasks()
-	{
-		loadRakeTasks(true, RModuleUtil.getModuleOrJRubyFacetSdk(myModule));
-	}
 
 	// Externalizing
 	public void readExternal(final Element element) throws InvalidDataException
@@ -188,22 +132,14 @@ public class BaseRailsFacetConfigurationImpl implements BaseRailsFacetConfigurat
 		return myRailsRootDirPath;
 	}
 
-	/**
-	 * Only for BaseRailsFacet internal tasks
-	 *
-	 * @param sdk Sdk
-	 */
+
 	@Override
 	public void setSdk(@Nullable final Sdk sdk)
 	{
 		mySdk = sdk;
 	}
 
-	/**
-	 * Only for BaseRailsFacet internal tasks
-	 *
-	 * @return SDK
-	 */
+
 	@Override
 	@Nullable
 	public Sdk getSdk()

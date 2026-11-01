@@ -40,14 +40,11 @@ public abstract class AbstractCachedSymbol implements CachedSymbol
 {
 	// full file symbol
 	protected FileSymbol myFileSymbol;
-	protected final Object LOCK = new Object();
-
 	protected Module myModule;
 	protected Sdk mySdk;
 	protected Project myProject;
 
 	private CacheKey myKey;
-	private Map<CacheKey, SoftReference<CachedSymbol>> myCache;
 
 	public AbstractCachedSymbol(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk)
 	{
@@ -92,23 +89,10 @@ public abstract class AbstractCachedSymbol implements CachedSymbol
 
 	protected abstract void updateFileSymbol();
 
-	@Override
-	public final void finalize() throws Throwable
-	{
-		if(myCache != null && myKey != null)
-		{
-			myCache.remove(myKey);
-		}
-		super.finalize();
-	}
 
 	public final void setKey(@Nonnull final CacheKey key)
 	{
 		myKey = key;
 	}
 
-	public final void setMap(@Nonnull final Map<CacheKey, SoftReference<CachedSymbol>> softCache)
-	{
-		myCache = softCache;
-	}
 }

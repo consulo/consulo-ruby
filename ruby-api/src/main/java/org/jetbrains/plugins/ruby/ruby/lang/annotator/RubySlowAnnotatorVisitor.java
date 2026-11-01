@@ -16,8 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.lang.annotator;
 
-import com.intellij.java.language.psi.PsiClass;
-import com.intellij.java.language.psi.PsiJavaPackage;
+import consulo.ruby.interop.ForeignReference;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import consulo.application.progress.ProgressManager;
 import consulo.language.editor.annotation.Annotation;
 import consulo.language.editor.annotation.AnnotationHolder;
@@ -25,8 +26,6 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiReference;
 import consulo.language.psi.ResolveResult;
 import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.jruby.JRubyUtil;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.resolve.JavaReference;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.references.RFieldAttrReference;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.references.RFileReference;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.resolve.ResolveUtil;
@@ -40,7 +39,9 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.methodCall.RCall;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.visitors.RubySystemCallVisitor;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Created by IntelliJ IDEA.
@@ -95,7 +96,7 @@ public class RubySlowAnnotatorVisitor extends RubySystemCallVisitor
 				final RFileReference reqReference = (RFileReference) reference;
 				final PsiElement ref = reqReference.getRefValue();
 				final String name = RFileUtil.evaluate(rCall.getContainingFile().getVirtualFile(), ref);
-				if(!(myFile.isJRubyEnabled() && JRubyUtil.JAVA.equals(name)))
+				if(!(myFile.isInteropEnabled() && name != null && isInteropLibrary(name)))
 				{
 					if(name != null)
 					{
@@ -240,7 +241,7 @@ public class RubySlowAnnotatorVisitor extends RubySystemCallVisitor
 		for(RPsiElement arg : args)
 		{
 			final List<PsiElement> list = ResolveUtil.multiResolve(arg);
-			if(!(list.size() == 1 && list.get(0) instanceof PsiClass))
+			if(!(list.size() == 1 && isForeignClass(list.get(0))))
 			{
 				myHolder.createErrorAnnotation(arg, RBundle.message("annotation.error.should.be.java.class"));
 			}
@@ -253,7 +254,7 @@ public class RubySlowAnnotatorVisitor extends RubySystemCallVisitor
 		// It`s often operation
 		ProgressManager.getInstance().checkCanceled();
 
-		visitIncludeJava(rCall, PsiClass.class, RBundle.message("annotation.error.should.be.java.class"));
+		visitIncludeJava(rCall, this::isForeignClass, RBundle.message("annotation.error.should.be.java.class"));
 	}
 
 	@Override
@@ -262,10 +263,27 @@ public class RubySlowAnnotatorVisitor extends RubySystemCallVisitor
 		// It`s often operation
 		ProgressManager.getInstance().checkCanceled();
 
-		visitIncludeJava(rCall, PsiJavaPackage.class, RBundle.message("annotation.error.should.be.java.package"));
+		visitIncludeJava(rCall, this::isForeignPackage, RBundle.message("annotation.error.should.be.java.package"));
 	}
 
-	private void visitIncludeJava(final RCall rCall, final Class clazzz, final String errorMsg)
+	private boolean isInteropLibrary(@Nonnull final String name)
+	{
+		return RubyInterop.compute(provider -> provider.isInteropLibrary(name) ? Boolean.TRUE : null) != null;
+	}
+
+	private boolean isForeignClass(@Nullable final PsiElement element)
+	{
+		final RubyInteropProvider provider = RubyInterop.forElement(element);
+		return provider != null && provider.isClass(element);
+	}
+
+	private boolean isForeignPackage(@Nullable final PsiElement element)
+	{
+		final RubyInteropProvider provider = RubyInterop.forElement(element);
+		return provider != null && provider.isPackage(element);
+	}
+
+	private void visitIncludeJava(final RCall rCall, final Predicate<PsiElement> condition, final String errorMsg)
 	{
 		final List<RPsiElement> args = rCall.getArguments();
 		if(args.isEmpty())
@@ -279,7 +297,7 @@ public class RubySlowAnnotatorVisitor extends RubySystemCallVisitor
 			myHolder.createErrorAnnotation(rCall, RBundle.message("annotation.error.should.be.java"));
 			return;
 		}
-		if(!clazzz.isInstance(references[references.length - 1].resolve()))
+		if(!condition.test(references[references.length - 1].resolve()))
 		{
 			myHolder.createErrorAnnotation(rCall, errorMsg);
 		}
@@ -294,7 +312,7 @@ public class RubySlowAnnotatorVisitor extends RubySystemCallVisitor
 		final PsiReference[] references = rSymbol.getReferences();
 		for(PsiReference reference : references)
 		{
-			if(reference instanceof JavaReference)
+			if(reference instanceof ForeignReference)
 			{
 				if(reference.resolve() == null)
 				{

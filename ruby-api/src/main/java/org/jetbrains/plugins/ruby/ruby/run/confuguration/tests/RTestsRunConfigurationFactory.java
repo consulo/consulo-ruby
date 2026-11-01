@@ -42,6 +42,12 @@ public class RTestsRunConfigurationFactory extends RubyRunConfigurationFactory
 	}
 
 	@Override
+	public String getId()
+	{
+		return "RubyTests";
+	}
+
+	@Override
 	public RunConfiguration createTemplateConfiguration(final Project project)
 	{
 		final RTestsRunConfiguration conf = new RTestsRunConfiguration(project, this, "");

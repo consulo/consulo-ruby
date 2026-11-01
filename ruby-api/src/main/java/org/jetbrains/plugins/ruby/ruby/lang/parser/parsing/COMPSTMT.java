@@ -49,6 +49,19 @@ public class COMPSTMT
 	 */
 	public static void parse(final RBuilder builder, IElementType... endDelimiters)
 	{
+		final boolean doBlockAllowed = builder.setDoBlockAllowed(true);
+		try
+		{
+			doParse(builder, endDelimiters);
+		}
+		finally
+		{
+			builder.setDoBlockAllowed(doBlockAllowed);
+		}
+	}
+
+	private static void doParse(final RBuilder builder, IElementType... endDelimiters)
+	{
 		builder.passJunks();
 		parseSTMTS(builder, TokenSet.create(endDelimiters));
 	}

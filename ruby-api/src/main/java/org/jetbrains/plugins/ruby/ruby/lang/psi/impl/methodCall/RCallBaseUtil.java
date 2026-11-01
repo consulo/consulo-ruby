@@ -98,7 +98,7 @@ public class RCallBaseUtil
 		}
 
 		// JRuby specific
-		if(RCall.IMPORT_COMMAND.equals(command))
+		if(RCall.IMPORT_COMMAND.equals(command) || RCall.JAVA_IMPORT_COMMAND.equals(command))
 		{
 			return RubyCallType.IMPORT_CALL;
 		}

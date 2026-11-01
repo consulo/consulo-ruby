@@ -43,6 +43,7 @@
 
 	<modules>
 		<module>consulo-jruby</module>
+		<module>consulo-jruby-maven</module>
 		<module>consulo-ruby-on-rails</module>
 		<module>consulo-jruby-on-rails</module>
 		<module>ruby-api</module>

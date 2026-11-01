@@ -23,7 +23,8 @@ import consulo.language.ast.IElementType;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.ParsingMethod;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.RubyElementTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.bnf.BNF;
-import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.BinaryExprParsing;
+import consulo.language.ast.TokenSet;
+import org.jetbrains.plugins.ruby.ruby.lang.lexer.RubyTokenTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.ErrorMsg;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.ParsingMethodWithAssignmentLookup;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RBuilder;
@@ -34,8 +35,10 @@ import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RMarker;
  * User: oleg
  * Date: 08.06.2006
  */
-class RangeExpression
+class RangeExpression implements RubyTokenTypes
 {
+	private static final TokenSet ENDLESS_RANGE_FOLLOWERS = TokenSet.create(tRPAREN, tRBRACK, tRBRACE, tEOL, tSEMICOLON, tCOMMA,
+			kTHEN, kDO, kDO_COND, kEND, kIF_MOD, kUNLESS_MOD, tASSOC);
 
 	/**
 	 * Range expression parsing
@@ -58,7 +61,7 @@ class RangeExpression
 	 * @return result of parsing
 	 */
 	@Nonnull
-	public static IElementType parseWithLeadBool(final RBuilder builder, final RMarker marker, final IElementType result)
+	public static IElementType parseWithLeadBool(final RBuilder builder, RMarker marker, IElementType result)
 	{
 		ParsingMethod parsingMethod = new ParsingMethodWithAssignmentLookup()
 		{
@@ -70,7 +73,35 @@ class RangeExpression
 			}
 		};
 
-		return BinaryExprParsing.parseWithLeadOperand(builder, marker, result, parsingMethod, ErrorMsg.EXPRESSION_EXPECTED_MESSAGE, BNF.tRANGE_TOKENS, RubyElementTypes.RANGE_EXPRESSION);
+		if(result == RubyElementTypes.EMPTY_INPUT)
+		{
+			// ..5 - beginless range
+			if(builder.compareAndEat(BNF.tRANGE_TOKENS))
+			{
+				if(parsingMethod.parse(builder) == RubyElementTypes.EMPTY_INPUT)
+				{
+					builder.error(ErrorMsg.EXPRESSION_EXPECTED_MESSAGE);
+				}
+				marker.done(RubyElementTypes.RANGE_EXPRESSION);
+				return RubyElementTypes.RANGE_EXPRESSION;
+			}
+			marker.drop();
+			return RubyElementTypes.EMPTY_INPUT;
+		}
+
+		while(builder.compareAndEat(BNF.tRANGE_TOKENS))
+		{
+			// 1.. - endless range
+			if(!builder.eof() && !builder.compare(ENDLESS_RANGE_FOLLOWERS) && parsingMethod.parse(builder) == RubyElementTypes.EMPTY_INPUT)
+			{
+				builder.error(ErrorMsg.EXPRESSION_EXPECTED_MESSAGE);
+			}
+			marker.done(RubyElementTypes.RANGE_EXPRESSION);
+			marker = marker.precede();
+			result = RubyElementTypes.RANGE_EXPRESSION;
+		}
+		marker.drop();
+		return result;
 
 	}
 

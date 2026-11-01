@@ -39,20 +39,20 @@ public class Super implements RubyTokenTypes
 	{
 		RMarker statementMarker = builder.mark();
 		builder.match(kSUPER);
-		final boolean braceSeen = builder.compareAndEat(tfLPAREN);
-		// In this case we have only kSUPER keyword
-		if(CALL_ARGS.parse(builder) == RubyElementTypes.EMPTY_INPUT && !braceSeen)
+		// super(args) is a primary: it may go on as an expression, super(x) - y
+		if(builder.compare(tfLPAREN))
 		{
 			statementMarker.rollbackTo();
 			return RubyElementTypes.EMPTY_INPUT;
 		}
-		if(braceSeen)
+		// In this case we have only kSUPER keyword
+		if(CALL_ARGS.parse(builder) == RubyElementTypes.EMPTY_INPUT)
 		{
-			builder.match(tRPAREN);
+			statementMarker.rollbackTo();
+			return RubyElementTypes.EMPTY_INPUT;
 		}
-		final IElementType result = braceSeen ? RubyElementTypes.FUNCTION_CALL : RubyElementTypes.COMMAND_CALL;
-		statementMarker.done(result);
-		return result;
+		statementMarker.done(RubyElementTypes.COMMAND_CALL);
+		return RubyElementTypes.COMMAND_CALL;
 
 	}
 }

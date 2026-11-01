@@ -30,7 +30,7 @@ public class ClassesOnlyAutocompleteFilter implements ScopeAutocompleteFilter
 {
 
 	@Override
-	public boolean allowJRuby()
+	public boolean allowForeign()
 	{
 		return false;
 	}

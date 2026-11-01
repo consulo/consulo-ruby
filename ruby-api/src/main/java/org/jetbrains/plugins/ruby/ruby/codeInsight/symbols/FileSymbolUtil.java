@@ -70,38 +70,39 @@ public class FileSymbolUtil
 	{
 		// Check if this action is not stopped
 		ProgressManager.getInstance().checkCanceled();
-		final RFile rFile = rVFile;
+		final RFile rFile = rVFile.getOriginalFile() instanceof RFile originalFile ? originalFile : rVFile;
 		final RFile pureRVFile = rVFile;
 
-		// Psi file is used to obtain module and project
-		LOG.assertTrue(rFile != null, "rFile shouldn`t be null " + rVFile.getContainingFileUrl()); //shouldn't be null
 		final VirtualFile file = rFile.getVirtualFile();
-		LOG.assertTrue(file != null, "file shouldn`t be null " + rVFile.getContainingFileUrl()); //shouldn't be null
+		if(file == null)
+		{
+			return null;
+		}
 
 		final Module module = rFile.getModule();
 		final Project project = rFile.getProject();
-		final boolean jrubyEnabled = rFile.isJRubyEnabled();
+		final boolean interopEnabled = rFile.isInteropEnabled();
 		final String url = file.getUrl();
 
 		// Symbol build should work with pure virtual files
 		// because it incorrectly works on psi files
 		if(pureRVFile == null)
 		{
-			// can't get from cache in not ruby projects or if no JRuby facet detected
+			// can't get from cache in not ruby projects
 			return null;
 		}
 
 		if(isRubyTestMode)
 		{
-			final FileSymbol fileSymbol = new FileSymbol(null, project, jrubyEnabled);
+			final FileSymbol fileSymbol = new FileSymbol(null, project, interopEnabled);
 			FileSymbolUtil.process(fileSymbol, url, InterpretationMode.ONLY_TESTS_EXTERNAL, true);
 			return fileSymbol;
 		}
 
 		//noinspection ConstantConditions
-		final Sdk sdk = module != null ? RModuleUtil.getModuleOrJRubyFacetSdk(module) : null;
+		final Sdk sdk = module != null ? RModuleUtil.getModuleSdk(module) : null;
 
-		final FileSymbol fileSymbol = SymbolCacheUtil.getFileSymbol(SymbolsCache.getInstance(project).getModifiableCachedSymbol(FileSymbolType.MODIFIABLE, url, module, sdk, jrubyEnabled));
+		final FileSymbol fileSymbol = SymbolCacheUtil.getFileSymbol(SymbolsCache.getInstance(project).getModifiableCachedSymbol(FileSymbolType.MODIFIABLE, url, module, sdk, interopEnabled));
 		// setting last evaluated symbol
 		LastSymbolStorage.getInstance(project).setSymbol(fileSymbol);
 		return fileSymbol;

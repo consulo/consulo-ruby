@@ -29,7 +29,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.TypeSet;
  */
 public class SymbolFilterFactory
 {
-	public static final SymbolFilter CLASSES_ONLY_FILTER = SymbolFilterFactory.createFilterByTypeSet(new TypeSet(Type.CLASS, Type.MODULE, Type.JAVA_CLASS, Type.JAVA_PROXY_CLASS, Type.JAVA_PACKAGE));
+	public static final SymbolFilter CLASSES_ONLY_FILTER = SymbolFilterFactory.createFilterByTypeSet(new TypeSet(Type.CLASS, Type.MODULE, Type.FOREIGN_CLASS, Type.FOREIGN_PROXY_CLASS, Type.FOREIGN_PACKAGE));
 
 	public static final SymbolFilter EMPTY_FILTER = new SymbolFilter()
 	{

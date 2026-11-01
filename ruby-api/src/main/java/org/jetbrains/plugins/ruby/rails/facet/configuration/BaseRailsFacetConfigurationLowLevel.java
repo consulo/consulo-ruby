@@ -31,9 +31,7 @@ import consulo.module.Module;
 public interface BaseRailsFacetConfigurationLowLevel extends BaseRailsFacetConfiguration
 {
 
-	public void loadGenerators(final boolean forceRegenerate, @Nullable final Sdk sdk);
 
-	public void loadRakeTasks(final boolean forceRegenerate, final Sdk sdk);
 
 	public void setRailsApplicationRootPath(@Nonnull final String rootPath);
 

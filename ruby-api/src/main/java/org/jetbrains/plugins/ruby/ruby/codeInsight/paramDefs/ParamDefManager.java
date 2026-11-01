@@ -16,6 +16,7 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.paramDefs;
 
+import consulo.application.Application;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,11 +41,28 @@ public class ParamDefManager
 		return ServiceManager.getService(ParamDefManager.class);
 	}
 
-	private Map<String, ParamDef[]> myParamDefs = new HashMap<String, ParamDef[]>();
+	private final Map<String, ParamDef[]> myParamDefs = new HashMap<String, ParamDef[]>();
+	private final Map<String, ParamDef[]> myParamDefsByMethodName = new HashMap<String, ParamDef[]>();
 
-	public void registerParamDef(String methodFQN, ParamDef[] paramDefs)
+	private volatile boolean myProvidersLoaded;
+
+	public void registerParamDef(String methodFQN, ParamDef... paramDefs)
 	{
 		myParamDefs.put(methodFQN, paramDefs);
+		final int delimiter = methodFQN.lastIndexOf("::");
+		myParamDefsByMethodName.putIfAbsent(delimiter >= 0 ? methodFQN.substring(delimiter + 2) : methodFQN, paramDefs);
+	}
+
+	/**
+	 * Registers the definitions of another method for a method with the same parameters
+	 */
+	public void copyParamDefs(String methodFQN, String sourceMethodFQN)
+	{
+		final ParamDef[] paramDefs = myParamDefs.get(sourceMethodFQN);
+		if(paramDefs != null)
+		{
+			registerParamDef(methodFQN, paramDefs);
+		}
 	}
 
 	public ParamDef[] getParamDefs(Symbol method)
@@ -55,6 +73,32 @@ public class ParamDefManager
 
 	public ParamDef[] getParamDefs(final String methodFQN)
 	{
+		loadProviders();
 		return myParamDefs.get(methodFQN);
+	}
+
+	/**
+	 * @return the definitions of the first method registered under the name, for calls the symbols do not resolve
+	 */
+	public ParamDef[] getParamDefsByMethodName(final String methodName)
+	{
+		loadProviders();
+		return myParamDefsByMethodName.get(methodName);
+	}
+
+	private void loadProviders()
+	{
+		if(myProvidersLoaded)
+		{
+			return;
+		}
+		synchronized(myParamDefs)
+		{
+			if(!myProvidersLoaded)
+			{
+				Application.get().getExtensionPoint(ParamDefProvider.class).forEach(provider -> provider.registerParamDefs(this));
+				myProvidersLoaded = true;
+			}
+		}
 	}
 }

@@ -16,6 +16,7 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.cache;
 
+import consulo.ruby.runtime.BundledRubyStubs;
 import jakarta.annotation.Nullable;
 
 import consulo.content.bundle.Sdk;
@@ -32,15 +33,12 @@ public class SymbolCacheUtil
 {
 
 	@Nullable
-	public static String getStubUrlByType(@Nonnull final FileSymbolType type, @Nullable final Sdk sdk, final boolean jrubyEnabled)
+	public static String getStubUrlByType(@Nonnull final FileSymbolType type, @Nullable final Sdk sdk, final boolean interopEnabled)
 	{
-		if(type == FileSymbolType.BUILT_IN)
+		if(type == FileSymbolType.BUILT_IN || type == FileSymbolType.RAILS_BUILT_IN)
 		{
-			return getStubUrl(sdk, jrubyEnabled ? StubsUrls.JRUBY_BUILT_IN_RB : StubsUrls.BUILT_IN_RB);
-		}
-		else if(type == FileSymbolType.RAILS_BUILT_IN)
-		{
-			return getStubUrl(sdk, jrubyEnabled ? StubsUrls.JRUBY_FULL_RAILS_RB : StubsUrls.FULL_RAILS_RB);
+			final String sdkStubUrl = getStubUrl(sdk, StubsUrls.BUILT_IN_RB);
+			return sdkStubUrl != null ? sdkStubUrl : BundledRubyStubs.getBuiltInUrl();
 		}
 		return null;
 	}

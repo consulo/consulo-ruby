@@ -31,6 +31,7 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.expressions.RAssocList;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.expressions.RListOfExpressions;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.methodCall.RCall;
 import consulo.application.ApplicationManager;
+import org.jetbrains.plugins.ruby.rails.facet.RailsFacetUtil;
 
 /**
  * @author yole
@@ -90,11 +91,7 @@ public class ParamDefUtil
 				String hashKey = null;
 				if(assoc != null)
 				{
-					RPsiElement key = assoc.getKey();
-					if(key != null)
-					{
-						hashKey = key.getText();
-					}
+					hashKey = assoc.getKeyName();
 				}
 				return new ParamContext(valueElement, call, exprIndex, hashKey);
 			}
@@ -124,6 +121,12 @@ public class ParamDefUtil
 			String calledMethod = context.getCall().getPsiCommand().getText();
 			ParamDef[] paramDefs = ParamDefManager.getInstance().getParamDefs(calledMethod);
 			return findParamDefByIndex(context, paramDefs);
+		}
+		else if(context.getModule() != null && RailsFacetUtil.hasRailsSupport(context.getModule()))
+		{
+			// the Rails sources are not always resolved: match the framework methods by name
+			String calledMethod = context.getCall().getPsiCommand().getText();
+			return findParamDefByIndex(context, ParamDefManager.getInstance().getParamDefsByMethodName(calledMethod));
 		}
 		return null;
 	}

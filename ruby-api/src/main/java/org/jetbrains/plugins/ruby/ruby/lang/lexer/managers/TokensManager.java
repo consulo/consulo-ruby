@@ -20,6 +20,10 @@ import consulo.language.ast.IElementType;
 import org.jetbrains.plugins.ruby.ruby.lang.lexer.RubyRawLexer;
 import org.jetbrains.plugins.ruby.ruby.lang.lexer.RubyTokenTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.lexer.managers.state.Expr;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.bnf.BNF;
+import jakarta.annotation.Nonnull;
+
+import java.util.Map;
 
 /**
  * Created by IntelliJ IDEA.
@@ -29,8 +33,35 @@ import org.jetbrains.plugins.ruby.ruby.lang.lexer.managers.state.Expr;
  */
 public class TokensManager implements RubyTokenTypes
 {
+	private static final Map<String, IElementType> PSEUDO_KEYWORDS = Map.of(
+			"true", kTRUE,
+			"false", kFALSE,
+			"nil", kNIL,
+			"self", kSELF,
+			"super", kSUPER,
+			"__FILE__", kFILE,
+			"__LINE__", kLINE);
+
+	private static final Map<String, IElementType> KEYWORDS = Map.ofEntries(
+			Map.entry("alias", kALIAS), Map.entry("and", kAND), Map.entry("begin", kBEGIN), Map.entry("break", kBREAK),
+			Map.entry("case", kCASE), Map.entry("class", kCLASS), Map.entry("def", kDEF), Map.entry("else", kELSE),
+			Map.entry("elsif", kELSIF), Map.entry("end", kEND), Map.entry("ensure", kENSURE), Map.entry("for", kFOR),
+			Map.entry("in", kIN), Map.entry("module", kMODULE), Map.entry("next", kNEXT), Map.entry("not", kNOT),
+			Map.entry("or", kOR), Map.entry("redo", kREDO), Map.entry("retry", kRETRY), Map.entry("return", kRETURN),
+			Map.entry("then", kTHEN), Map.entry("undef", kUNDEF), Map.entry("when", kWHEN), Map.entry("yield", kYIELD),
+			Map.entry("do", kDO), Map.entry("if", kIF), Map.entry("unless", kUNLESS), Map.entry("while", kWHILE),
+			Map.entry("until", kUNTIL), Map.entry("rescue", kRESCUE));
+
+	private static final Map<IElementType, IElementType> MODIFIERS = Map.of(
+			kIF, kIF_MOD,
+			kUNLESS, kUNLESS_MOD,
+			kWHILE, kWHILE_MOD,
+			kUNTIL, kUNTIL_MOD,
+			kRESCUE, kRESCUE_MOD);
+
 	final private StatesManager myStatesManager;
 	private boolean spaceSeen;
+	private IElementType myLastSignificantToken;
 
 	public TokensManager(final RubyRawLexer lexer)
 	{
@@ -40,11 +71,60 @@ public class TokensManager implements RubyTokenTypes
 	public void reset()
 	{
 		spaceSeen = false;
+		myLastSignificantToken = null;
+	}
+
+	/**
+	 * @return true if {@code name:} is a label (hash key, keyword argument or parameter) and not
+	 * {@code name} followed by the colon of a ternary operator
+	 */
+	public boolean isLabelAllowed()
+	{
+		if(isFnameAllowed() || myLastSignificantToken == tQUESTION)
+		{
+			return false;
+		}
+		final Expr expr = myStatesManager.getExpr();
+		return expr == Expr.BEG || expr == Expr.MID || expr == Expr.ARG || expr == Expr.CMD_ARG || expr == Expr.CMD_BRACE;
+	}
+
+	/**
+	 * @param text identifier, constant or fid that is not a label
+	 * @return its token type, keywords included
+	 */
+	public IElementType getWordType(@Nonnull final CharSequence text)
+	{
+		final String word = text.toString();
+		final char last = word.charAt(word.length() - 1);
+		if(last == '?' || last == '!')
+		{
+			return tFID;
+		}
+		final IElementType pseudoKeyword = PSEUDO_KEYWORDS.get(word);
+		if(pseudoKeyword != null)
+		{
+			return pseudoKeyword;
+		}
+		final IElementType keyword = KEYWORDS.get(word);
+		if(keyword != null && reswordAllowed())
+		{
+			final IElementType modifier = MODIFIERS.get(keyword);
+			return modifier != null && isExprEnd() ? modifier : keyword;
+		}
+		return Character.isUpperCase(word.charAt(0)) ? tCONSTANT : tIDENTIFIER;
 	}
 
 	/**
 	 * @return true if resword is allowed now
 	 */
+	/**
+	 * @return true right after <code>.</code>, <code>&.</code> or <code>::</code>: <code>value.false</code> calls a method
+	 */
+	public boolean isMethodNameAfterDot()
+	{
+		return myLastSignificantToken != null && BNF.tDOT_OR_COLON.contains(myLastSignificantToken);
+	}
+
 	public boolean reswordAllowed()
 	{
 		return !isFnameAllowed();
@@ -119,6 +199,10 @@ public class TokensManager implements RubyTokenTypes
 	public IElementType process(IElementType type)
 	{
 		spaceSeen = (type == tWHITE_SPACE);
+		if(!BNF.tWHITESPACES_OR_COMMENTS.contains(type))
+		{
+			myLastSignificantToken = type;
+		}
 		myStatesManager.process(type);
 		return type;
 	}

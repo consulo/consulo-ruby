@@ -36,11 +36,11 @@ import java.util.Set;
 public abstract class AbstractLayeredCachedSymbol extends AbstractCachedSymbol {
     // All the list of required files
     private Set<String> myAllExternalUrls;
-    protected final boolean isJRubyEnabled;
+    protected final boolean isInteropEnabled;
 
-    public AbstractLayeredCachedSymbol(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean jRubyEnabled) {
+    public AbstractLayeredCachedSymbol(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean interopEnabled) {
         super(project, module, sdk);
-        isJRubyEnabled = jRubyEnabled;
+        isInteropEnabled = interopEnabled;
     }
 
     @Nullable
@@ -58,7 +58,7 @@ public abstract class AbstractLayeredCachedSymbol extends AbstractCachedSymbol {
 
     @Override
     protected void updateFileSymbol() {
-        myFileSymbol = new FileSymbol(SymbolCacheUtil.getFileSymbol(getBaseSymbol()), myProject, isJRubyEnabled);
+        myFileSymbol = new FileSymbol(SymbolCacheUtil.getFileSymbol(getBaseSymbol()), myProject, isInteropEnabled);
         addAdditionalData();
         myAllExternalUrls = FileSymbolUtil.getUrls(myFileSymbol);
     }

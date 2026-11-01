@@ -45,23 +45,25 @@ public interface FirstLastTokensBNF extends TokenBNF
 					// left brackets! Not fBraces!!!
 					RubyTokenTypes.tLPAREN, RubyTokenTypes.tLPAREN_ARG, RubyTokenTypes.tLBRACK, RubyTokenTypes.tLBRACE,
 
-					RubyTokenTypes.tCOLON3, RubyTokenTypes.tFID,
+					RubyTokenTypes.tCOLON3, RubyTokenTypes.tFID, RubyTokenTypes.tLAMBDA,
 					// keyword section
 					RubyTokenTypes.kBEGIN, RubyTokenTypes.kRETURN, RubyTokenTypes.kYIELD, RubyTokenTypes.kDEFINED, RubyTokenTypes.kIF, RubyTokenTypes.kUNLESS, RubyTokenTypes.kWHILE, RubyTokenTypes.kUNTIL, RubyTokenTypes.kCASE, RubyTokenTypes.kFOR, RubyTokenTypes.kCLASS, RubyTokenTypes.kMODULE, RubyTokenTypes.kDEF, RubyTokenTypes.kBREAK, RubyTokenTypes.kNEXT, RubyTokenTypes.kREDO, RubyTokenTypes.kRETRY));
 
 
 	final TokenSet tARG_FIRST_TOKEN = TokenSet.orSet(tPRIMARY_FISRT_TOKEN, TokenSet.create(
 			// plus, minus, tilde, exclamation
-			RubyTokenTypes.tUPLUS, RubyTokenTypes.tUMINUS, RubyTokenTypes.tEXCLAMATION, RubyTokenTypes.tTILDE, RubyTokenTypes.kDEFINED));
+			RubyTokenTypes.tUPLUS, RubyTokenTypes.tUMINUS, RubyTokenTypes.tEXCLAMATION, RubyTokenTypes.tTILDE, RubyTokenTypes.kDEFINED,
+			// beginless ranges
+			RubyTokenTypes.tDOT2, RubyTokenTypes.tDOT3));
 
 
 	final TokenSet tCOMMAND_FIRST_TOKENS = TokenSet.orSet(tPRIMARY_FISRT_TOKEN, TokenSet.create(RubyTokenTypes.kSUPER, RubyTokenTypes.kYIELD));
 
 	final TokenSet tCOMMAND_CALL_FIRST_TOKENS = TokenSet.orSet(tCOMMAND_FIRST_TOKENS, TokenSet.create(RubyTokenTypes.kRETURN, RubyTokenTypes.kBREAK, RubyTokenTypes.kNEXT));
 
-	final TokenSet tAREF_ARGS_FIRST_TOKENS = TokenSet.orSet(tARG_FIRST_TOKEN, tCOMMAND_FIRST_TOKENS, TokenSet.create(RubyTokenTypes.tSTAR));
+	final TokenSet tAREF_ARGS_FIRST_TOKENS = TokenSet.orSet(tARG_FIRST_TOKEN, tCOMMAND_FIRST_TOKENS, TokenSet.create(RubyTokenTypes.tSTAR, RubyTokenTypes.tDSTAR, RubyTokenTypes.tLABEL));
 
-	final TokenSet tCALL_ARG_FIRST_TOKEN = TokenSet.orSet(TokenSet.create(RubyTokenTypes.tAMPER, RubyTokenTypes.tSTAR), tARG_FIRST_TOKEN, tCOMMAND_FIRST_TOKENS);
+	final TokenSet tCALL_ARG_FIRST_TOKEN = TokenSet.orSet(TokenSet.create(RubyTokenTypes.tAMPER, RubyTokenTypes.tSTAR, RubyTokenTypes.tDSTAR, RubyTokenTypes.tLABEL, RubyTokenTypes.tDOT3), tARG_FIRST_TOKEN, tCOMMAND_FIRST_TOKENS);
 
 	final TokenSet tEXPR_FIRST_TOKENS = TokenSet.orSet(tCOMMAND_CALL_FIRST_TOKENS, tARG_FIRST_TOKEN, TokenSet.create(RubyTokenTypes.kNOT, RubyTokenTypes.tEXCLAMATION));
 

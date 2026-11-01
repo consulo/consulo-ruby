@@ -24,6 +24,7 @@ import org.jetbrains.plugins.ruby.ruby.lang.lexer.RubyTokenTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.RubyElementTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.bnf.BNF;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.COMPSTMT;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.definitions.method.BODYSTMT;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.iterators.OPT_BLOCK_VAR;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RBuilder;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RMarker;
@@ -49,6 +50,20 @@ public class BRACE_BLOCK implements RubyTokenTypes
 	@Nonnull
 	public static IElementType parse(final RBuilder builder)
 	{
+		final boolean doBlockAllowed = builder.setDoBlockAllowed(true);
+		try
+		{
+			return doParse(builder);
+		}
+		finally
+		{
+			builder.setDoBlockAllowed(doBlockAllowed);
+		}
+	}
+
+	@Nonnull
+	private static IElementType doParse(final RBuilder builder)
+	{
 
 		if(!builder.compare(BNF.tCODE_BLOCK_BEG_TOKENS))
 		{
@@ -65,7 +80,16 @@ public class BRACE_BLOCK implements RubyTokenTypes
 		OPT_BLOCK_VAR.parse(builder);
 
 		builder.passEOLs();
-		COMPSTMT.parse(builder, endDelim);
+		if(blockType == RubyElementTypes.DO_CODE_BLOCK)
+		{
+			// do ... rescue ... else ... ensure ... end
+			COMPSTMT.parse(builder, kEND, kRESCUE, kELSE, kENSURE);
+			BODYSTMT.parseRescueElseEnsure(builder);
+		}
+		else
+		{
+			COMPSTMT.parse(builder, endDelim);
+		}
 
 		builder.matchIgnoreEOL(endDelim);
 		iteratorBlockMarker.done(blockType);

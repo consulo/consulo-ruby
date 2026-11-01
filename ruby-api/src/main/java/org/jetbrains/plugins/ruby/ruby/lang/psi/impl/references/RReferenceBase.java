@@ -25,7 +25,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NonNls;
 
-import org.jetbrains.plugins.ruby.ruby.codeInsight.references.JavaClassReference;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.references.ForeignClassReference;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.references.NewReference;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.references.RQualifiedReference;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.resolve.ResolveUtil;
@@ -104,7 +104,7 @@ public abstract class RReferenceBase extends RPsiElementBase implements RReferen
 		}
 		if(isJavaClassCall())
 		{
-			return new JavaClassReference(getProject(), this, reciever, value);
+			return new ForeignClassReference(getProject(), this, reciever, value);
 		}
 		return new RQualifiedReference(getProject(), this, reciever, value, getType());
 	}

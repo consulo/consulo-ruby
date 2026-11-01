@@ -23,7 +23,7 @@ import consulo.language.psi.search.TextOccurenceProcessor;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.RubyOverrideImplementUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Type;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.FileSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RFile;
@@ -85,12 +85,12 @@ public class JRubyImplementingMethodsProcessor implements TextOccurenceProcessor
 			{
 				return true;
 			}
-			final List elements = RubyOverrideImplementUtil.getImplementedJavaMethods(RubyOverrideImplementUtil.getOverridenSymbols(fileSymbol, symbol));
+			final List elements = RubyOverrideImplementUtil.getImplementedForeignMethods(RubyOverrideImplementUtil.getOverridenSymbols(fileSymbol, symbol));
 			for(Object o : elements)
 			{
-				if(o instanceof Symbol && ((Symbol) o).getType() == Type.JAVA_METHOD)
+				if(o instanceof Symbol && ((Symbol) o).getType() == Type.FOREIGN_METHOD)
 				{
-					if(myMethod == ((JavaSymbol) o).getPsiElement())
+					if(myMethod == ((ForeignSymbol) o).getPsiElement())
 					{
 						myConsumer.test(container);
 						break;

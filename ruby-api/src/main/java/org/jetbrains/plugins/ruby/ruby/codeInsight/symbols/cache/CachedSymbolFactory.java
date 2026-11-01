@@ -45,13 +45,13 @@ public class CachedSymbolFactory
 	private static final Logger LOG = Logger.getInstance(CachedSymbolFactory.class.getName());
 
 	@Nullable
-	public static CachedSymbol createCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final String url, @Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isJRubyEnabled)
+	public static CachedSymbol createCachedSymbol(@Nonnull final FileSymbolType type, @Nullable final String url, @Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isInteropEnabled)
 	{
 		// Modifiable
 		if(type == FileSymbolType.MODIFIABLE)
 		{
 			LOG.assertTrue(url != null);
-			return new ModifiableCachedSymbol(project, url, module, sdk, isJRubyEnabled);
+			return new ModifiableCachedSymbol(project, url, module, sdk, isInteropEnabled);
 		}
 
 		// Builtin types handling
@@ -69,38 +69,38 @@ public class CachedSymbolFactory
 		// Module layers
 		if(type == FileSymbolType.MODULE_LAYER)
 		{
-			return new ModuleLayer(project, module, sdk, isJRubyEnabled);
+			return new ModuleLayer(project, module, sdk, isInteropEnabled);
 		}
 
 		if(type == FileSymbolType.RAILS_MODULE_LAYER)
 		{
-			return new RailsModuleLayer(project, module, sdk, isJRubyEnabled);
+			return new RailsModuleLayer(project, module, sdk, isInteropEnabled);
 		}
 
 		// Rails specific layers
 		if(type == FileSymbolType.CONTROLLERS_AND_HELPERS_LAYER)
 		{
-			return new ControllersAndHelpersLayer(project, module, sdk, isJRubyEnabled);
+			return new ControllersAndHelpersLayer(project, module, sdk, isInteropEnabled);
 		}
 		if(type == FileSymbolType.MODELS_LAYER)
 		{
-			return new ModelsLayer(project, module, sdk, isJRubyEnabled);
+			return new ModelsLayer(project, module, sdk, isInteropEnabled);
 		}
 		if(type == FileSymbolType.LIBS_LAYER)
 		{
-			return new LibsLayer(project, module, sdk, isJRubyEnabled);
+			return new LibsLayer(project, module, sdk, isInteropEnabled);
 		}
 		if(type == FileSymbolType.VENDOR_LAYER)
 		{
-			return new VendorLayer(project, module, sdk, isJRubyEnabled);
+			return new VendorLayer(project, module, sdk, isInteropEnabled);
 		}
 		if(type == FileSymbolType.MAILERS_LAYER)
 		{
-			return new MailersLayer(project, module, sdk, isJRubyEnabled);
+			return new MailersLayer(project, module, sdk, isInteropEnabled);
 		}
 		if(type == FileSymbolType.WEBSERVICES_LAYER)
 		{
-			return new WebServicesLayer(project, module, sdk, isJRubyEnabled);
+			return new WebServicesLayer(project, module, sdk, isInteropEnabled);
 		}
 		return null;
 	}

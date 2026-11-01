@@ -102,7 +102,7 @@ public class RubyResolveVisitor extends RubyInspectionVisitor
 		final String text = rIdentifier.getText();
 		// We shouldn`t inspect these built-in commands, because they are missed in stubs
 		if(RCall.GEM_COMMAND.equals(text) || RCall.REQUIRE_GEM_COMMAND.equals(text) ||
-				RCall.IMPORT_COMMAND.equals(text) || RCall.INCLUDE_CLASS_COMMAND.equals(text) || RCall.INCLUDE_PACKAGE_COMMAND.equals(text))
+				RCall.IMPORT_COMMAND.equals(text) || RCall.JAVA_IMPORT_COMMAND.equals(text) || RCall.INCLUDE_CLASS_COMMAND.equals(text) || RCall.INCLUDE_PACKAGE_COMMAND.equals(text))
 		{
 			return;
 		}

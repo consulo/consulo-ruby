@@ -42,6 +42,6 @@ public class RubyStructureViewBuilder extends TreeBasedStructureViewBuilder
 	@Nonnull
 	public StructureViewModel createStructureViewModel(Editor editor)
 	{
-		return new RubyStructureViewModel((RPsiElement) myPsiFile);
+		return new RubyStructureViewModel(editor, (RPsiElement) myPsiFile);
 	}
 }

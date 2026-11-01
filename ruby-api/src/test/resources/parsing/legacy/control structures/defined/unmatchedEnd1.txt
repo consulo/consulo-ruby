@@ -1,0 +1,24 @@
+def FOO
+end
+end
+--------------------------------------------
+Ruby file
+  Compound statement
+    Ruby:METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Function name
+          PsiElement(constant)('FOO')
+      Command argument list
+        <empty list>
+      PsiElement(end of line)('\n')
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')
+    PsiElement(end of line)('\n')
+    PsiErrorElement:Unexpected: end
+      <empty list>
+    PsiElement(end)('end')
+  PsiElement(end of line)('\n')

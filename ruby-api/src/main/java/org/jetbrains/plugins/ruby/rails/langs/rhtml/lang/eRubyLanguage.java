@@ -21,7 +21,6 @@ import consulo.language.ast.ASTNode;
 import consulo.language.codeStyle.Block;
 import consulo.language.codeStyle.CodeStyleSettings;
 import consulo.language.codeStyle.FormattingDocumentModel;
-import consulo.language.editor.highlight.SyntaxHighlighter;
 import consulo.language.impl.psi.SourceTreeToPsiMap;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
@@ -35,7 +34,6 @@ import consulo.xml.psi.formatter.xml.HtmlPolicy;
 import consulo.xml.psi.formatter.xml.ReadOnlyBlock;
 import consulo.xml.psi.formatter.xml.XmlBlock;
 import jakarta.annotation.Nonnull;
-import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.highlighting.impl.RHTMLFileHighlighterImpl;
 import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.psi.RHTMLFile;
 import org.jetbrains.plugins.ruby.rails.langs.rhtml.lang.psi.RHTMLPsiUtil;
 
@@ -53,15 +51,6 @@ public class eRubyLanguage extends Language implements TemplateLanguage
 	{
 		super("E-RUBY", "application/x-httpd-eruby");
 	}
-
-
-	@Nonnull
-	public SyntaxHighlighter getSyntaxHighlighter(final Project project, final VirtualFile virtualFile)
-	{
-		return new RHTMLFileHighlighterImpl();
-	}
-
-	//TODO  getAnnotator()
 
 
 	public static Block createRHTMLRoot(final PsiElement element, final CodeStyleSettings settings, final FormattingDocumentModel documentModel)

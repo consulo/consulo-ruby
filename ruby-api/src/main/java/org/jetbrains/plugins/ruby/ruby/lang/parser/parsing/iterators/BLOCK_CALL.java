@@ -77,7 +77,7 @@ public class BLOCK_CALL implements RubyTokenTypes
 	 */
 	private static IElementType parseSingleWithLeadCOMMAND(final RBuilder builder, RMarker marker, IElementType result)
 	{
-		if(result != RubyElementTypes.COMMAND_CALL || !builder.compare(kDO))
+		if(result != RubyElementTypes.COMMAND_CALL || !builder.compare(kDO) || !builder.isDoBlockAllowed())
 		{
 			marker.drop();
 			return result;
@@ -109,7 +109,7 @@ public class BLOCK_CALL implements RubyTokenTypes
 /*
 		| block_call '.' operation2 opt_paren_args
 */
-			if(builder.compareAndEat(tDOT))
+			if(builder.compareAndEat(tDOT) || builder.compareAndEat(tANDDOT))
 			{
 				if(OPERATION.parse2(builder) == RubyElementTypes.EMPTY_INPUT)
 				{

@@ -44,7 +44,6 @@ import consulo.virtualFileSystem.VirtualFileManager;
  */
 public class OSUtil
 {
-	private static final String JRUBY_CLASSPATH_NAME = "CLASSPATH";
 	private static final String UNIX_PATH_NAME = "PATH";
 	private static final String WINDOWS_PATH_NAME = "Path";
 
@@ -67,7 +66,7 @@ public class OSUtil
 	@SuppressWarnings({"BooleanMethodIsAlwaysInverted"})
 	public static boolean isSVNInIDEALoadPath()
 	{
-		final GeneralCommandLine cmdLine = Runner.createAndSetupCmdLine(null, null, null, null, true, SVN_CMD_ARGS[0], SVN_CMD_ARGS[1]);
+		final GeneralCommandLine cmdLine = Runner.createAndSetupCmdLine(null, null, null, true, SVN_CMD_ARGS[0], SVN_CMD_ARGS[1]);
 		try
 		{
 			Process process = cmdLine.createProcess();
@@ -96,15 +95,6 @@ public class OSUtil
 	}
 
 	@Nullable
-	public static String getJRubyCLASSPATHenvVariableName()
-	{
-		if(SystemInfo.isWindows || SystemInfo.isUnix)
-		{
-			return JRUBY_CLASSPATH_NAME;
-		}
-		LOG.error(RBundle.message("os.not.supported"));
-		return null;
-	}
 
 	public static String appendToPATHenvVariable(@Nullable final String path, @Nonnull final String additionalPath)
 	{

@@ -16,6 +16,8 @@
 
 package org.jetbrains.plugins.ruby.ruby.actions.intention;
 
+import consulo.annotation.component.ExtensionImpl;
+import consulo.language.editor.intention.IntentionMetaData;
 import consulo.codeEditor.Editor;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
@@ -36,6 +38,8 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.holders.utils.RFileUtil;
  * @author: Roman Chernyatchik
  * @date: 04.05.2007
  */
+@ExtensionImpl
+@IntentionMetaData(ignoreId = "ruby.RelativePathToAbsolutePathIntention", categories = "Ruby", fileExtensions = "rb")
 public class RelativePathToAbsolutePathIntention extends RequirePathIntention
 {
 	private static final LocalizeValue TEXT = LocalizeValue.localizeTODO(RBundle.message("ruby.intentions.relative.path.to.absolute"));

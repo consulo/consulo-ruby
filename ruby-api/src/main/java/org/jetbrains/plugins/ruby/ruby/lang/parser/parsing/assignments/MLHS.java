@@ -44,9 +44,13 @@ mlhs		: mlhs_basic
 mlhs_basic	: mlhs_head 
 		| mlhs_head mlhs_item
 		| mlhs_head tSTAR mlhs_node
+		| mlhs_head tSTAR mlhs_node ',' mlhs_post
 		| mlhs_head tSTAR
+		| mlhs_head tSTAR ',' mlhs_post
 		| tSTAR mlhs_node
+		| tSTAR mlhs_node ',' mlhs_post
 		| tSTAR
+		| tSTAR ',' mlhs_post
 		;
 
 mlhs_head	: mlhs_item ',' (mlhs_item ',')* ;
@@ -86,10 +90,11 @@ mlhs_node == lhs
 
 	public static IElementType parseMLHS_BASIC(RBuilder builder)
 	{
+		// *head, last
 		if(builder.compare(tSTAR))
 		{
 			RMarker marker = builder.mark();
-			parseArgumentsToArray(builder);
+			parseTail(builder);
 			marker.done(RubyElementTypes.LIST_OF_EXPRESSIONS);
 			return RubyElementTypes.MLHS;
 		}
@@ -148,13 +153,13 @@ mlhs_node == lhs
 			public IElementType parse(final RBuilder builder)
 			{
 
-				if(starSeen.get())
-				{
-					return RubyElementTypes.EMPTY_INPUT;
-				}
-
+				// one splat, anywhere: first, *middle, last
 				if(builder.compare(tSTAR))
 				{
+					if(starSeen.get())
+					{
+						return RubyElementTypes.EMPTY_INPUT;
+					}
 					starSeen.set(true);
 					return parseArgumentsToArray(builder);
 				}

@@ -16,6 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.resolve;
 
+import org.jetbrains.plugins.ruby.ruby.lang.psi.RStructuralElement;
+import org.jetbrains.plugins.ruby.ruby.cache.psi.StructureType;
+import consulo.ruby.interop.RubyInterop;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 
 import java.util.ArrayList;
@@ -26,7 +29,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import consulo.project.Project;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.resolve.JavaResolveUtil;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.RImportJavaClass;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.RIncludeJavaClass;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.RIncludeJavaPackage;
@@ -35,7 +37,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.references.RPsiPolyvariantRef
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Type;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Types;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.FileSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.PsiElementSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.lang.findUsages.RubyUsageType;
@@ -68,10 +70,10 @@ public class ResolveUtil
 	public static void addVariants(@Nullable final FileSymbol fileSymbol, @Nonnull final Project project, @Nonnull final List<ResolveResult> list, @Nonnull final Symbol symbol)
 	{
 
-		// Java Symbol
-		if(Types.JAVA.contains(symbol.getType()))
+		// Foreign symbol
+		if(Types.FOREIGN.contains(symbol.getType()))
 		{
-			add(list, ((JavaSymbol) symbol).getPsiElement());
+			add(list, ((ForeignSymbol) symbol).getPsiElement());
 		}
 		// Local variable
 		if(Type.LOCAL_VARIABLE.asSet().contains(symbol.getType()))
@@ -81,25 +83,26 @@ public class ResolveUtil
 
 		for(RPsiElement element : SymbolPresentationUtil.getPrototypesToShow(fileSymbol, symbol))
 		{
-			// JRuby Specific!
-			if(element instanceof RImportJavaClass)
+			final StructureType elementType = element instanceof RStructuralElement structuralElement ? structuralElement.getType() : null;
+			if(elementType == StructureType.CALL_IMPORT && element instanceof RImportJavaClass)
 			{
 				for(RVirtualName name : ((RImportJavaClass) element).getVirtualNames())
 				{
-					add(list, JavaResolveUtil.getPackageOrClass(project, name.getPath()));
+					add(list, RubyInterop.compute(provider -> provider.findPackageOrClass(project, name.getPath())));
 				}
 			}
-			if(element instanceof RIncludeJavaClass)
+			if((elementType == StructureType.CALL_INCLUDE_CLASS || elementType == StructureType.CALL_INCLUDE_PACKAGE) && element instanceof RIncludeJavaClass)
 			{
 				String qualifiedName = ((RIncludeJavaClass) element).getQualifiedName();
 				if(qualifiedName != null)
 				{
-					// Hack for RVirtualIncludePackage
-					if(element instanceof RIncludeJavaPackage)
+					// include_package defines every class of the package
+					if(elementType == StructureType.CALL_INCLUDE_PACKAGE)
 					{
 						qualifiedName += '.' + symbol.getName();
 					}
-					add(list, JavaResolveUtil.getPackageOrClass(project, qualifiedName));
+					final String name = qualifiedName;
+					add(list, RubyInterop.compute(provider -> provider.findPackageOrClass(project, name)));
 				}
 			}
 			add(list, RVirtualPsiUtil.findPsiByVirtualElement(element, project));

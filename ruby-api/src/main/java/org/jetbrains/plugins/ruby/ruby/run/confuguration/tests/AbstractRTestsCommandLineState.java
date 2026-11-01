@@ -17,26 +17,31 @@
 package org.jetbrains.plugins.ruby.ruby.run.confuguration.tests;
 
 import consulo.execution.CantRunException;
+import consulo.execution.DefaultExecutionResult;
 import consulo.execution.ExecutionResult;
+import consulo.execution.test.sm.SMTestRunnerConnectionUtil;
+import consulo.execution.test.sm.runner.SMTRunnerConsoleProperties;
+import consulo.execution.test.ui.BaseTestsOutputConsoleView;
+import consulo.process.ProcessHandler;
 import consulo.execution.runner.ExecutionEnvironment;
 import consulo.execution.runner.ProgramRunner;
-import consulo.execution.ui.console.TextConsoleBuilderFactory;
 import consulo.process.ExecutionException;
 import consulo.execution.executor.Executor;
 import consulo.process.cmd.GeneralCommandLine;
-import consulo.execution.ui.console.TextConsoleBuilder;
-import consulo.process.event.ProcessEvent;
-import consulo.project.Project;
-import consulo.process.event.ProcessListener;
-import consulo.util.dataholder.Key;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.AbstractRubyRunConfiguration;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.ColouredCommandLineState;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunCommandLineState;
 import org.jetbrains.plugins.ruby.ruby.run.filters.RFileLinksFilter;
 import org.jetbrains.plugins.ruby.ruby.run.filters.RStackTraceFilter;
 
+import consulo.container.plugin.PluginManager;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkType;
+
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Created by IntelliJ IDEA.
@@ -46,69 +51,88 @@ import java.io.File;
  */
 public abstract class AbstractRTestsCommandLineState extends ColouredCommandLineState
 {
-	protected File tempFile;
+	public static final String FRAMEWORK_NAME = "Ruby";
 
 	protected AbstractRTestsCommandLineState(final AbstractRubyRunConfiguration config, ExecutionEnvironment executionEnvironment)
 	{
 		super(executionEnvironment);
-		final Project project = config.getProject();
-
-		final TextConsoleBuilder consoleBuilder = TextConsoleBuilderFactory.getInstance().createBuilder(project);
-		setConsoleBuilder(consoleBuilder);
-
-		addFilters(config, project, consoleBuilder, config.getWorkingDirectory());
-
-		attachCompilerForJRuby(config);
 	}
 
-
+	/**
+	 * The tests run with the reporter of the plugin and show in the test tree
+	 */
 	@Override
 	public ExecutionResult execute(@Nonnull Executor executor, @Nonnull ProgramRunner runner) throws ExecutionException
 	{
-		final ExecutionResult result = super.execute(executor, runner);
-		if(result != null)
-		{
-			result.getProcessHandler().addProcessListener(new ProcessListener()
-			{
-				@Override
-				public void startNotified(final ProcessEvent event)
-				{
-				}
+		final AbstractRubyRunConfiguration config = (AbstractRubyRunConfiguration) getEnvironment().getRunProfile();
+		final ProcessHandler processHandler = startProcess();
 
-				@Override
-				public void processTerminated(final ProcessEvent event)
-				{
-					if(tempFile != null)
-					{
-						tempFile.delete();
-					}
-				}
+		final SMTRunnerConsoleProperties properties = new SMTRunnerConsoleProperties(config, FRAMEWORK_NAME, executor);
+		properties.setIdBasedTestTree(true);
+		final BaseTestsOutputConsoleView console = SMTestRunnerConnectionUtil.createAndAttachConsole(FRAMEWORK_NAME, processHandler, properties);
+		console.addMessageFilter(new RStackTraceFilter(config.getProject(), config.getWorkingDirectory()));
+		console.addMessageFilter(new RFileLinksFilter(config.getModule()));
 
-				@Override
-				public void processWillTerminate(final ProcessEvent event, final boolean willBeDestroyed)
-				{
-				}
-
-				@Override
-				public void onTextAvailable(final ProcessEvent event, final Key outputType)
-				{
-				}
-			});
-		}
-		return result;
-	}
-
-	protected void addFilters(final AbstractRubyRunConfiguration config, final Project project, final TextConsoleBuilder consoleBuilder, final String scriptDir)
-	{
-		consoleBuilder.addFilter(new RStackTraceFilter(project, scriptDir));
-		consoleBuilder.addFilter(new RFileLinksFilter(config.getModule()));
+		return new DefaultExecutionResult(console, processHandler);
 	}
 
 	protected GeneralCommandLine createTestDefaultCmdLine(final AbstractRubyRunConfiguration config) throws CantRunException
 	{
 		final GeneralCommandLine commandLine = createGeneralDefaultCmdLine(config);
-
 		RubyRunCommandLineState.addParams(commandLine, config.getRubyArgs());
 		return commandLine;
+	}
+
+	/**
+	 * Loads the gems of the Gemfile above the tests, as <code>bundle exec</code> does.
+	 *
+	 * @return the directory of the Gemfile, else the base directory of the tests
+	 */
+	@Nullable
+	protected static <C extends AbstractRubyRunConfiguration & AbstractRTestsRunConfigurationParams> Path addBundler(final GeneralCommandLine commandLine, final C config)
+	{
+		final Path baseDirectory = getBaseDirectory(config);
+		final Path gemfile = baseDirectory == null ? null : findGemfile(baseDirectory);
+		if(gemfile != null)
+		{
+			commandLine.withEnvironment("BUNDLE_GEMFILE", gemfile.toString());
+			commandLine.addParameter("-rbundler/setup");
+			return gemfile.getParent();
+		}
+		return baseDirectory;
+	}
+
+	/**
+	 * @param name a script of the plugin's <code>testing</code> directory
+	 */
+	protected static String getTestingScript(final String name)
+	{
+		return new File(PluginManager.getPluginPath(RubySdkType.class), "testing/" + name).getPath();
+	}
+
+	@Nullable
+	private static <C extends AbstractRubyRunConfiguration & AbstractRTestsRunConfigurationParams> Path getBaseDirectory(final C config)
+	{
+		final String workingDirectory = config.getWorkingDirectory();
+		if(workingDirectory != null && !workingDirectory.isBlank())
+		{
+			return Path.of(workingDirectory);
+		}
+		final String script = config.getTestType() == AbstractRubyRunConfiguration.TestType.ALL_IN_FOLDER ? config.getTestsFolderPath() : config.getTestScriptPath();
+		return script == null || script.isBlank() ? null : Path.of(script).getParent();
+	}
+
+	@Nullable
+	private static Path findGemfile(final Path directory)
+	{
+		for(Path dir = directory.toAbsolutePath(); dir != null; dir = dir.getParent())
+		{
+			final Path gemfile = dir.resolve("Gemfile");
+			if(Files.isRegularFile(gemfile))
+			{
+				return gemfile;
+			}
+		}
+		return null;
 	}
 }

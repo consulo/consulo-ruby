@@ -1,0 +1,14 @@
+class 
+end-----
+Ruby file
+  Compound statement
+    Ruby:CLASS
+      PsiElement(class)('class')
+      PsiWhiteSpace(' \n')
+      Class name
+        PsiErrorElement:Expected: class name
+          <empty list>
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')

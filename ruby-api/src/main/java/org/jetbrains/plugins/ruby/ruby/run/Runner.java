@@ -17,7 +17,6 @@
 package org.jetbrains.plugins.ruby.ruby.run;
 
 import consulo.application.Application;
-import consulo.java.execution.configurations.OwnJavaParameters;
 import consulo.logging.Logger;
 import consulo.process.ExecutionException;
 import consulo.process.ProcessHandler;
@@ -159,7 +158,7 @@ public class Runner {
             arguments = new String[0];
         }
 
-        final GeneralCommandLine cmdLine = createAndSetupCmdLine(null, workingDir, null, null, true, command[0], arguments);
+        final GeneralCommandLine cmdLine = createAndSetupCmdLine(null, workingDir, null, true, command[0], arguments);
         return cmdLine;
     }
 
@@ -170,12 +169,11 @@ public class Runner {
      * @param workingDir         Process working dir
      * @param additionalEnvs     If not null process will be executed with these environment varialbes
      * @param passParentEnvs     If true environment variables of parent process will be added to process's set of environment variables
-     * @param jRubyClassPath     If not null, this value will be used for JRuby CLASSPATH env. variable
      * @param executablePath     Path to executable file
      * @param arguments          Process commandLine
      * @return process builder
      */
-    public static GeneralCommandLine createAndSetupCmdLine(@Nullable final String additionalLoadPath, @Nullable final String workingDir, @Nullable final String jRubyClassPath, @Nullable final Map<String, String> additionalEnvs, final boolean passParentEnvs, @Nonnull final String executablePath, @Nonnull final String... arguments) {
+    public static GeneralCommandLine createAndSetupCmdLine(@Nullable final String additionalLoadPath, @Nullable final String workingDir, @Nullable final Map<String, String> additionalEnvs, final boolean passParentEnvs, @Nonnull final String executablePath, @Nonnull final String... arguments) {
         final GeneralCommandLine cmdLine = new GeneralCommandLine();
 
         cmdLine.setExePath(toSystemDependentName(executablePath));
@@ -205,28 +203,12 @@ public class Runner {
             cutstomEnvVariables.put(PATH_KEY, OSUtil.appendToPATHenvVariable(path, additionalLoadPath));
         }
 
-        //CLASSPATH
-        if (!TextUtil.isEmpty(jRubyClassPath)) {
-            final String CLASSPATH_KEY = OSUtil.getJRubyCLASSPATHenvVariableName();
-            final String classPath = cutstomEnvVariables.get(CLASSPATH_KEY);
-            assert jRubyClassPath != null;
-            cutstomEnvVariables.put(CLASSPATH_KEY, OSUtil.appendToPATHenvVariable(classPath, jRubyClassPath));
-        }
-
         //User's custom ENV variables
-        final OwnJavaParameters params = new OwnJavaParameters();
-        params.setPassParentEnvs(passParentEnvs);
-        //   EnvironmentVariablesComponent.setupEnvs(params, cutstomEnvVariables, passParentEnvs);
-
         final Map<String, String> envParams = new HashMap<String, String>();
-        if (params.isPassParentEnvs()) {
+        if (passParentEnvs) {
             envParams.putAll(System.getenv());
         }
-        final Map<String, String> params_env = params.getEnv();
-        if (params_env != null) {
-            envParams.putAll(params_env);
-        }
-
+        envParams.putAll(cutstomEnvVariables);
 
         //Setting cmdLine params
         cmdLine.getEnvironment().putAll(envParams);

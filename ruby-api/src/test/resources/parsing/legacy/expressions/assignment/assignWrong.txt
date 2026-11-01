@@ -1,0 +1,14 @@
+1=2
+------
+Ruby file
+  Compound statement
+    Integer
+      PsiElement(integer literal)('1')
+    PsiErrorElement:Expected: ; or end of line
+      <empty list>
+    PsiElement(=)('=')
+    PsiErrorElement:Expected: ; or end of line
+      <empty list>
+    Integer
+      PsiElement(integer literal)('2')
+  PsiElement(end of line)('\n')

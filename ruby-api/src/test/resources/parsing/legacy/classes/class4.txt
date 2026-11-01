@@ -1,0 +1,23 @@
+class C<::A
+end
+-----
+Ruby file
+  Compound statement
+    Ruby:CLASS
+      PsiElement(class)('class')
+      PsiWhiteSpace(' ')
+      Class name
+        Constant
+          PsiElement(constant)('C')
+      PsiElement(<)('<')
+      Superclass
+        Colon reference
+          PsiElement(::3)('::')
+          Constant
+            PsiElement(constant)('A')
+      PsiElement(end of line)('\n')
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

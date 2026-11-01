@@ -94,8 +94,8 @@ public class RHTMLAndRubyBreadcrumbsInfoProvider
 			return true;
 		}
 
-		final PsiFile origFile = psiFile.getOriginalFile();
-		if(origFile != null && origFile.getLanguage() == eRubyLanguage.INSTANCE)
+		// the Ruby code of a template
+		if(psiFile.getViewProvider().getBaseLanguage() == eRubyLanguage.INSTANCE)
 		{
 			return true;
 		}

@@ -15,7 +15,13 @@
  */
 package org.jetbrains.plugins.ruby.addins.rspec.run.configuration;
 
+import consulo.disposer.Disposable;
 import consulo.localize.LocalizeValue;
+import consulo.project.Project;
+import consulo.ui.IntBox;
+import consulo.ui.Label;
+import consulo.ui.annotation.RequiredUIAccess;
+import consulo.ui.util.FormBuilder;
 import consulo.ruby.api.localize.RubyApiLocalize;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.AbstractRubyRunConfiguration.TestType;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.tests.AbstractRTestsTargetFragment;
@@ -30,14 +36,16 @@ public class RSpecTargetFragment extends AbstractRTestsTargetFragment<RSpecRunCo
 
     @Override
     protected List<TestType> getTestTypes() {
-        return List.of(TestType.ALL_IN_FOLDER, TestType.TEST_SCRIPT);
+        return List.of(TestType.ALL_IN_FOLDER, TestType.TEST_SCRIPT, TestType.TEST_METHOD);
     }
 
     @Override
     protected LocalizeValue getTestTypeName(TestType testType) {
-        return testType == TestType.ALL_IN_FOLDER
-            ? RubyApiLocalize.rspecRunConfigurationTestsDialogRbAllinfolder()
-            : RubyApiLocalize.rspecRunConfigurationTestsDialogRbFile();
+        return switch (testType) {
+            case ALL_IN_FOLDER -> RubyApiLocalize.rspecRunConfigurationTestsDialogRbAllinfolder();
+            case TEST_METHOD -> RubyApiLocalize.rspecRunConfigurationTestsDialogRbExample();
+            default -> RubyApiLocalize.rspecRunConfigurationTestsDialogRbFile();
+        };
     }
 
     @Override
@@ -63,5 +71,55 @@ public class RSpecTargetFragment extends AbstractRTestsTargetFragment<RSpecRunCo
     @Override
     protected String getDefaultFileMask() {
         return RSpecRunConfiguration.DEFAULT_TESTS_SEARCH_MASK;
+    }
+
+    @RequiredUIAccess
+    @Override
+    protected TargetEditor createTargetEditor(Project project, Disposable parent) {
+        return new ExampleTargetEditor(project, parent);
+    }
+
+    private class ExampleTargetEditor extends TargetEditor {
+        private final IntBox myLineBox;
+        private final Label myLineLabel;
+
+        @RequiredUIAccess
+        private ExampleTargetEditor(Project project, Disposable parent) {
+            super(project, parent);
+
+            myLineBox = IntBox.create();
+            myLineLabel = Label.create(RubyApiLocalize.rspecRunConfigurationTestsDialogComponentsExampleLine());
+        }
+
+        @RequiredUIAccess
+        @Override
+        protected void addExtraRows(FormBuilder builder) {
+            builder.addLabeled(myLineLabel, myLineBox);
+        }
+
+        @RequiredUIAccess
+        @Override
+        protected void updateTestType(TestType testType) {
+            super.updateTestType(testType);
+
+            setRowVisible(myLineLabel, myLineBox, testType == TestType.TEST_METHOD);
+        }
+
+        @RequiredUIAccess
+        @Override
+        public void reset(RSpecRunConfiguration target) {
+            myLineBox.setValue(target.getExampleLine());
+
+            super.reset(target);
+        }
+
+        @RequiredUIAccess
+        @Override
+        public void apply(RSpecRunConfiguration target) {
+            super.apply(target);
+
+            Integer line = myLineBox.getValue();
+            target.setExampleLine(line == null ? 0 : line);
+        }
     }
 }

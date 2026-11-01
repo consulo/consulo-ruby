@@ -27,6 +27,7 @@ import org.jetbrains.plugins.ruby.ruby.lang.parser.bnf.BNF;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.EXPR;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.basicTypes.VARIABLE;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.ErrorMsg;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.commands.COMMAND_OR_ARG;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RBuilder;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.RMarker;
 
@@ -58,7 +59,19 @@ public class Method implements RubyTokenTypes
 
 		IElementType definitionType = parseMethodNameAndGetType(builder);
 
-		F_ARGLIST.parse(builder);
+		// def name = expr
+		if(!builder.compare(tASSGN))
+		{
+			F_ARGLIST.parse(builder);
+		}
+
+		// def name(args) = expr
+		if(builder.compare(tASSGN))
+		{
+			parseEndlessBody(builder);
+			statementMarker.done(definitionType);
+			return definitionType;
+		}
 
 		BODYSTMT.parse(builder);
 
@@ -66,6 +79,21 @@ public class Method implements RubyTokenTypes
 
 		statementMarker.done(definitionType);
 		return definitionType;
+	}
+
+	private static void parseEndlessBody(final RBuilder builder)
+	{
+		builder.match(tASSGN);
+		builder.passEOLs();
+
+		RMarker bodyMarker = builder.mark();
+		RMarker compoundMarker = builder.mark();
+		if(COMMAND_OR_ARG.parse(builder) == RubyElementTypes.EMPTY_INPUT)
+		{
+			builder.error(ErrorMsg.EXPRESSION_EXPECTED_MESSAGE);
+		}
+		compoundMarker.done(RubyElementTypes.COMPOUND_STATEMENT);
+		bodyMarker.done(RubyElementTypes.BODY_STATEMENT);
 	}
 
 

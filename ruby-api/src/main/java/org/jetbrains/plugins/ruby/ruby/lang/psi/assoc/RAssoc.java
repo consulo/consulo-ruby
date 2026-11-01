@@ -27,8 +27,18 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
  */
 public interface RAssoc extends RPsiElement
 {
+	/**
+	 * @return the key expression of {@code key => value}, null for {@code key: value} where the key is a label
+	 */
 	@Nullable
 	public RPsiElement getKey();
+
+	/**
+	 * @return the key as a name: {@code key} for {@code key: value}, {@code :key => value} and {@code "key" => value},
+	 * the key text for other keys
+	 */
+	@Nullable
+	public String getKeyName();
 
 	@Nullable
 	public RPsiElement getValue();

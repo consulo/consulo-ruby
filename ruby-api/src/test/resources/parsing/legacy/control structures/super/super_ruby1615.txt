@@ -1,0 +1,75 @@
+class FilePort < Port
+  def initialize( fname )
+    @filename = File.expand_path(fname)
+    super()
+  end
+end
+--------
+Ruby file
+  Compound statement
+    Ruby:CLASS
+      PsiElement(class)('class')
+      PsiWhiteSpace(' ')
+      Class name
+        Constant
+          PsiElement(constant)('FilePort')
+      PsiWhiteSpace(' ')
+      PsiElement(<)('<')
+      PsiWhiteSpace(' ')
+      Superclass
+        Constant
+          PsiElement(constant)('Port')
+      PsiElement(end of line)('\n')
+      PsiWhiteSpace('  ')
+      Body statement
+        Compound statement
+          Ruby:METHOD
+            PsiElement(def)('def')
+            PsiWhiteSpace(' ')
+            Method name
+              Function name
+                PsiElement(identifier)('initialize')
+            PsiElement(()('(')
+            PsiWhiteSpace(' ')
+            Function argument list
+              Argument
+                Identifier
+                  PsiElement(identifier)('fname')
+            PsiWhiteSpace(' ')
+            PsiElement())(')')
+            PsiWhiteSpace('\n    ')
+            Body statement
+              Compound statement
+                Assignment expression
+                  Instance variable
+                    PsiElement(instance variable)('@filename')
+                  PsiWhiteSpace(' ')
+                  PsiElement(=)('=')
+                  PsiWhiteSpace(' ')
+                  Function call
+                    Dot reference
+                      Constant
+                        PsiElement(constant)('File')
+                      PsiElement(.)('.')
+                      Identifier
+                        PsiElement(identifier)('expand_path')
+                    PsiElement(f()('(')
+                    List of expressions
+                      Identifier
+                        PsiElement(identifier)('fname')
+                    PsiElement())(')')
+                PsiElement(end of line)('\n')
+                PsiWhiteSpace('    ')
+                Function call
+                  Pseudo constant
+                    PsiElement(super)('super')
+                  PsiElement(f()('(')
+                  List of expressions
+                    <empty list>
+                  PsiElement())(')')
+            PsiElement(end of line)('\n')
+            PsiWhiteSpace('  ')
+            PsiElement(end)('end')
+      PsiElement(end of line)('\n')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

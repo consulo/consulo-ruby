@@ -23,6 +23,7 @@ import org.jetbrains.plugins.ruby.ruby.lang.parser.ParsingMethod;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.RubyElementTypes;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.bnf.BNF;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.arg.ARG;
+import consulo.language.ast.TokenSet;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.basicTypes.VARIABLE;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.ErrorMsg;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsingUtils.ListParsingUtil;
@@ -36,7 +37,7 @@ import consulo.language.ast.IElementType;
  * Date: 27.06.2006
  */
 
-class F_ARGS implements RubyTokenTypes
+public class F_ARGS implements RubyTokenTypes
 {
 
 
@@ -77,7 +78,6 @@ f_norm_arg	: tCONSTANT
 	{
 		ParsingMethod parsingMethod = new ParsingMethod()
 		{
-			boolean afterDefAsgn = false;
 			boolean afterRestArgs = false;
 			boolean afterBlockArg = false;
 
@@ -97,6 +97,33 @@ f_norm_arg	: tCONSTANT
 					return parseRestArg(builder);
 				}
 
+				// key:, key: default
+				if(builder.compare(tLABEL))
+				{
+					return parseKeywordArg(builder);
+				}
+
+				// **options, **, **nil
+				if(builder.compare(tDSTAR))
+				{
+					return parseKeywordRestArg(builder);
+				}
+
+				// ...
+				if(builder.compare(tDOT3))
+				{
+					RMarker marker = builder.mark();
+					builder.advanceLexer();
+					marker.done(RubyElementTypes.FORWARD_ARGUMENT);
+					return RubyElementTypes.FORWARD_ARGUMENT;
+				}
+
+				// (a, b) - destructuring
+				if(builder.compare(BNF.tLPARENS))
+				{
+					return parseDestructuringArg(builder);
+				}
+
 				// f_blockarg
 				if(!afterBlockArg && builder.compare(tAMPER))
 				{
@@ -104,7 +131,7 @@ f_norm_arg	: tCONSTANT
 					return parseFBlockArg(builder);
 				}
 				// f_arg
-				if(!afterBlockArg && !afterRestArgs && builder.compare(BNF.tF_NORMARGS))
+				if(!afterBlockArg && builder.compare(BNF.tF_NORMARGS))
 				{
 					RMarker marker = builder.mark();
 					if(builder.compare(BNF.tF_NORMARGS))
@@ -114,10 +141,6 @@ f_norm_arg	: tCONSTANT
 					// f_optarg
 					if(!builder.compareAndEat(tASSGN))
 					{
-						if(afterDefAsgn)
-						{
-							builder.error(ErrorMsg.expected(tASSGN));
-						}
 						marker.done(RubyElementTypes.ARGUMENT);
 						return RubyElementTypes.ARGUMENT;
 					}
@@ -125,7 +148,6 @@ f_norm_arg	: tCONSTANT
 					{
 						builder.error(ErrorMsg.EXPRESSION_EXPECTED_MESSAGE);
 					}
-					afterDefAsgn = true;
 					marker.done(RubyElementTypes.PREDEFINED_ARGUMENT);
 					return RubyElementTypes.PREDEFINED_ARGUMENT;
 				}
@@ -136,6 +158,67 @@ f_norm_arg	: tCONSTANT
 
 		int count = ListParsingUtil.parseCommaDelimitedExpressions(builder, parsingMethod);
 		return (count > 0) ? RubyElementTypes.LIST_OF_EXPRESSIONS : RubyElementTypes.EMPTY_INPUT;
+	}
+
+	/**
+	 * f_marg_list: (a, (b, c), *rest)
+	 */
+	private static IElementType parseDestructuringArg(final RBuilder builder)
+	{
+		RMarker marker = builder.mark();
+		builder.advanceLexer();
+		ParsingMethod itemMethod = new ParsingMethod()
+		{
+			boolean afterRestArgs = false;
+
+			@Override
+			@Nonnull
+			public IElementType parse(final RBuilder builder)
+			{
+				if(builder.compare(BNF.tLPARENS))
+				{
+					return parseDestructuringArg(builder);
+				}
+				if(!afterRestArgs && builder.compare(tSTAR))
+				{
+					afterRestArgs = true;
+					return parseRestArg(builder);
+				}
+				return parseF_NORMARG(builder);
+			}
+		};
+		ListParsingUtil.parseCommaDelimitedExpressions(builder, itemMethod);
+		builder.match(tRPAREN);
+		marker.done(RubyElementTypes.LIST_OF_EXPRESSIONS);
+		return RubyElementTypes.LIST_OF_EXPRESSIONS;
+	}
+
+	private static IElementType parseKeywordArg(final RBuilder builder)
+	{
+		RMarker marker = builder.mark();
+		builder.match(tLABEL);
+		if(!builder.compare(TokenSet.create(tCOMMA, tRPAREN, tPIPE, tEOL, tSEMICOLON)))
+		{
+			ARG.parse(builder);
+		}
+		marker.done(RubyElementTypes.KEYWORD_ARGUMENT);
+		return RubyElementTypes.KEYWORD_ARGUMENT;
+	}
+
+	private static IElementType parseKeywordRestArg(final RBuilder builder)
+	{
+		RMarker marker = builder.mark();
+		builder.match(tDSTAR);
+		if(builder.compare(BNF.tF_NORMARGS))
+		{
+			VARIABLE.parse(builder);
+		}
+		else
+		{
+			builder.compareAndEat(kNIL);
+		}
+		marker.done(RubyElementTypes.KEYWORD_REST_ARGUMENT);
+		return RubyElementTypes.KEYWORD_REST_ARGUMENT;
 	}
 
 	private static IElementType parseF_NORMARG(RBuilder builder)

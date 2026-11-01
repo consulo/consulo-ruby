@@ -150,8 +150,13 @@ public class RailsConstants
 	// Scripts params
 	@NonNls
 	public static final String SPECS_SCRIPT_PATH = SCRIPTS_PATH + VirtualFileUtil.VFS_PATH_SEPARATOR + "spec";
+	/**
+	 * The rails command of an application, which loads its bundle itself
+	 */
 	@NonNls
-	public static final String SERVER_SCRIPT = SCRIPTS_PATH + VirtualFileUtil.VFS_PATH_SEPARATOR + "server";
+	public static final String RAILS_SCRIPT = "bin/rails";
+	@NonNls
+	public static final String SERVER_COMMAND = "server";
 
 	@NonNls
 	public static final String PARAM_FORCE_OVERWRITE = "--force";
@@ -163,6 +168,8 @@ public class RailsConstants
 	public static final String PARAM_SERVER_IP = "-b";
 	@NonNls
 	public static final String PARAM_SERVER_ENVIRONMENT = "-e";
+	@NonNls
+	public static final String PARAM_SERVER_USING = "-u";
 	@NonNls
 	public static final String PARAM_VERSION = "--version";
 	@NonNls

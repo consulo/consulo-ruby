@@ -17,7 +17,7 @@
 package org.jetbrains.plugins.ruby.rails.run.configuration;
 
 import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.rails.RailsUtil;
+import org.jetbrains.plugins.ruby.rails.facet.RailsModuleSupport;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.AbstractRubyRunConfiguration;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationUtil;
 
@@ -30,20 +30,18 @@ import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationUti
 public class RailsRunConfigurationUtil
 {
 	/**
-	 * Checks that SDK is valid Ruby kind SDK with Rails Support
+	 * Checks the SDK and that the module is a Rails application: its rails command comes with the application's bundle
 	 *
 	 * @param conf        RunConfiguration
 	 * @param isExecution Execution or validating mode
 	 * @throws Exception Instection errors (ExecutionException or RuntimeException)
 	 */
-	public static void inspectRailsSDK(final AbstractRubyRunConfiguration conf, final boolean isExecution) throws Exception
+	public static void inspectRailsApplication(final AbstractRubyRunConfiguration conf, final boolean isExecution) throws Exception
 	{
-		// Is Valid Ruby SDK
 		RubyRunConfigurationUtil.inspectSDK(conf, isExecution);
-		// SDK inspection
-		if(!RailsUtil.hasRailsSupportInSDK(conf.getSdk()))
+		if(!RailsModuleSupport.isEnabled(conf.getModule()))
 		{
-			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("sdk.error.no.rails.found"), isExecution);
+			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("rails.run.configuration.no.rails.application"), isExecution);
 		}
 	}
 }

@@ -16,6 +16,12 @@
 
 package org.jetbrains.plugins.ruby.ruby.lang.psi.impl.assoc;
 
+import consulo.language.psi.PsiElement;
+import consulo.util.lang.StringUtil;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.paramDefs.ParamDefImplUtil;
+import org.jetbrains.plugins.ruby.ruby.lang.lexer.RubyTokenTypes;
+import org.jetbrains.plugins.ruby.ruby.lang.psi.basicTypes.RSymbol;
+import org.jetbrains.plugins.ruby.ruby.lang.psi.basicTypes.stringLiterals.RStringLiteral;
 import jakarta.annotation.Nullable;
 
 import consulo.language.ast.ASTNode;
@@ -40,13 +46,41 @@ public class RAssocImpl extends RPsiElementBase<StubElement> implements RAssoc
 	@Nullable
 	public RPsiElement getKey()
 	{
-		return getChildByType(RPsiElement.class, 0);
+		return getLabel() != null ? null : getChildByType(RPsiElement.class, 0);
 	}
 
 	@Override
 	@Nullable
 	public RPsiElement getValue()
 	{
-		return getChildByType(RPsiElement.class, 1);
+		return getChildByType(RPsiElement.class, getLabel() != null ? 0 : 1);
+	}
+
+	@Override
+	@Nullable
+	public String getKeyName()
+	{
+		final PsiElement label = getLabel();
+		if(label != null)
+		{
+			return StringUtil.trimEnd(label.getText(), ":");
+		}
+		final RPsiElement key = getKey();
+		if(key == null)
+		{
+			return null;
+		}
+		if(key instanceof RSymbol || key instanceof RStringLiteral)
+		{
+			return ParamDefImplUtil.getElementText(key);
+		}
+		return key.getText();
+	}
+
+	@Nullable
+	private PsiElement getLabel()
+	{
+		final PsiElement first = getFirstChild();
+		return first != null && first.getNode().getElementType() == RubyTokenTypes.tLABEL ? first : null;
 	}
 }

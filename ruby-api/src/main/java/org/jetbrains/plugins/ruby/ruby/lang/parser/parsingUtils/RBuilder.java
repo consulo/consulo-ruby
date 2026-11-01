@@ -323,4 +323,14 @@ public interface RBuilder extends RubyTokenTypes
 	public Map<TokenSet, String> getErrorCache();
 
 	public boolean passHeredocs();
+
+	/**
+	 * @return false while command arguments without parentheses are parsed: a do block there belongs to the command
+	 */
+	public boolean isDoBlockAllowed();
+
+	/**
+	 * @return the previous value
+	 */
+	public boolean setDoBlockAllowed(boolean allowed);
 }

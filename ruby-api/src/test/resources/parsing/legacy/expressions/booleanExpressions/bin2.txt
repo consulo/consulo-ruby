@@ -1,0 +1,47 @@
+a and
+a or
+a ||
+a &&
+a |
+a &
+----------
+Ruby file
+  Compound statement
+    Boolean binary expression
+      Boolean binary expression
+        Identifier
+          PsiElement(identifier)('a')
+        PsiWhiteSpace(' ')
+        PsiElement(and)('and')
+        PsiWhiteSpace('\n')
+        Identifier
+          PsiElement(identifier)('a')
+      PsiWhiteSpace(' ')
+      PsiElement(or)('or')
+      PsiWhiteSpace('\n')
+      Boolean binary expression
+        Identifier
+          PsiElement(identifier)('a')
+        PsiWhiteSpace(' ')
+        PsiElement(||)('||')
+        PsiWhiteSpace('\n')
+        Boolean binary expression
+          Identifier
+            PsiElement(identifier)('a')
+          PsiWhiteSpace(' ')
+          PsiElement(&&)('&&')
+          PsiWhiteSpace('\n')
+          Bit expression
+            Identifier
+              PsiElement(identifier)('a')
+            PsiWhiteSpace(' ')
+            PsiElement(|)('|')
+            PsiWhiteSpace('\n')
+            Bit expression
+              Identifier
+                PsiElement(identifier)('a')
+              PsiWhiteSpace(' ')
+              PsiElement(&)('&')
+              PsiErrorElement:Expected: expression
+                <empty list>
+  PsiWhiteSpace('\n')

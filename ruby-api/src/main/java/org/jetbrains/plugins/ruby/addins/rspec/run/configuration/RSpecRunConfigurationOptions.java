@@ -24,10 +24,7 @@ import org.jspecify.annotations.Nullable;
 @CompiledJson
 public class RSpecRunConfigurationOptions extends AbstractRTestsRunConfigurationOptions {
     private @Nullable String mySpecArgs;
-    private boolean myUseColoredOutput = true;
-    private boolean myUseCustomSpecRunner;
-    private @Nullable String myCustomSpecsRunnerPath;
-    private boolean myRunSpecsSeparately;
+    private int myExampleLine;
 
     @Attribute("specArgs")
     public @Nullable String getSpecArgs() {
@@ -38,39 +35,12 @@ public class RSpecRunConfigurationOptions extends AbstractRTestsRunConfiguration
         mySpecArgs = StringUtil.nullize(specArgs, true);
     }
 
-    @Attribute("useColoredOutput")
-    public boolean isUseColoredOutput() {
-        return myUseColoredOutput;
+    @Attribute("exampleLine")
+    public int getExampleLine() {
+        return myExampleLine;
     }
 
-    public void setUseColoredOutput(boolean useColoredOutput) {
-        myUseColoredOutput = useColoredOutput;
-    }
-
-    @Attribute("useCustomSpecRunner")
-    public boolean isUseCustomSpecRunner() {
-        return myUseCustomSpecRunner;
-    }
-
-    public void setUseCustomSpecRunner(boolean useCustomSpecRunner) {
-        myUseCustomSpecRunner = useCustomSpecRunner;
-    }
-
-    @Attribute("customSpecsRunnerPath")
-    public @Nullable String getCustomSpecsRunnerPath() {
-        return myCustomSpecsRunnerPath;
-    }
-
-    public void setCustomSpecsRunnerPath(@Nullable String customSpecsRunnerPath) {
-        myCustomSpecsRunnerPath = StringUtil.nullize(customSpecsRunnerPath, true);
-    }
-
-    @Attribute("runSpecsSeparately")
-    public boolean isRunSpecsSeparately() {
-        return myRunSpecsSeparately;
-    }
-
-    public void setRunSpecsSeparately(boolean runSpecsSeparately) {
-        myRunSpecsSeparately = runSpecsSeparately;
+    public void setExampleLine(int exampleLine) {
+        myExampleLine = exampleLine;
     }
 }

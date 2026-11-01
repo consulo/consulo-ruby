@@ -31,7 +31,7 @@ import consulo.virtualFileSystem.VirtualFile;
 import consulo.virtualFileSystem.fileType.FileType;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.jetbrains.plugins.ruby.jruby.JRubyUtil;
+import consulo.ruby.interop.RubyInterop;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.RRequire;
 import org.jetbrains.plugins.ruby.ruby.cache.psi.StructureType;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.resolve.scope.RootScope;
@@ -88,8 +88,11 @@ public abstract class RPsiFileBase extends PsiFileImpl implements RFile {
     @Override
     @Nonnull
     public String getContainingFileUrl() {
-        final VirtualFile file = getVirtualFile();
-        assert file != null;
+        // a completion or injection copy has no virtual file of its own: it stands for the original one
+        VirtualFile file = getOriginalFile().getVirtualFile();
+        if (file == null) {
+            file = getViewProvider().getVirtualFile();
+        }
         return file.getUrl();
     }
 
@@ -381,14 +384,15 @@ public abstract class RPsiFileBase extends PsiFileImpl implements RFile {
     @Override
     @Nullable
     public Module getModule() {
-        final VirtualFile file = getVirtualFile();
+        // a completion copy has no file of its own: the module is the original file's
+        final VirtualFile file = getOriginalFile().getVirtualFile();
         return file != null ? RFileUtil.getModule(getProject(), file) : null;
     }
 
     @Override
-    public boolean isJRubyEnabled() {
+    public boolean isInteropEnabled() {
         final Module module = getModule();
-        return module != null && JRubyUtil.hasJRubySupport(module);
+        return module != null && RubyInterop.isEnabled(module);
     }
 
     @Override

@@ -50,7 +50,7 @@ public class Type
 	public static final Type FILE = new Type("FILE");
 	public static final Type MODULE = new Type("MODULE");
 	public static final Type CLASS = new Type("CLASS");
-	public static final Type JAVA_PROXY_CLASS = new Type("JAVA_PROXY_CLASS");
+	public static final Type FOREIGN_PROXY_CLASS = new Type("FOREIGN_PROXY_CLASS");
 	public static final Type SUPERCLASS = new Type("SUPERCLASS");
 
 	public static final Type CLASS_FIELD = new Type("CLASS_FIELD");
@@ -87,11 +87,11 @@ public class Type
 	public static final Type CONSTANT_ACCESS = new Type("CONSTANT_ACCESS");
 	public static final Type FIELD_WRITE_ACCESS = new Type("FIELD_WRITE_ACCESS");
 
-	// for JRuby
-	public static final Type JAVA_METHOD = new Type("JAVA_METHOD");
-	public static final Type JAVA_CLASS = new Type("JAVA_CLASS");
-	public static final Type JAVA_PACKAGE = new Type("JAVA_PACKAGE");
-	public static final Type JAVA_FIELD = new Type("JAVA_FIELD");
+	// symbols of another language, e.g. Java classes in JRuby
+	public static final Type FOREIGN_METHOD = new Type("FOREIGN_METHOD");
+	public static final Type FOREIGN_CLASS = new Type("FOREIGN_CLASS");
+	public static final Type FOREIGN_PACKAGE = new Type("FOREIGN_PACKAGE");
+	public static final Type FOREIGN_FIELD = new Type("FOREIGN_FIELD");
 
 	@NonNls
 	public String toString()

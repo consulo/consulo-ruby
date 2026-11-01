@@ -23,9 +23,9 @@ import consulo.ui.image.Image;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.resolve.JavaResolveUtil;
+import consulo.ruby.interop.RubyInterop;
 import org.jetbrains.plugins.ruby.ruby.RubyIcons;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.JavaLookupItem;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.ForeignLookupItem;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.RubyLookupItem;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.RubyPsiLookupItem;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.RubySimpleLookupItem;
@@ -66,7 +66,7 @@ public class ScopeSymbolsUtil
 	 * @param filter     Filter used
 	 * @return List of RubyLookupItems
 	 *         Priority:
-	 *         0. JRuby commands and packages
+	 *         0. foreign packages and classes
 	 *         1. Outter members (constants, modules, classes only)
 	 *         2. Superclasses and mixins members
 	 *         3. Own members
@@ -82,18 +82,16 @@ public class ScopeSymbolsUtil
 
 		if(fileSymbol != null)
 		{
-			// JRuby specific items
-			if(fileSymbol.isJRubyEnabled())
+			// top level foreign packages and classes
+			if(fileSymbol.isInteropEnabled() && filter.allowForeign())
 			{
-				if(filter.allowJRuby())
-				{
-					// add top level java packages
-					for(PsiElement psiElement : JavaResolveUtil.getAllowedTopLevelPackagesAndClasses(container.getProject()))
+				RubyInterop.forEach(provider -> {
+					for(PsiElement psiElement : provider.getTopLevelPackagesAndClasses(container.getProject()))
 					{
-						final RubyLookupItem item = new JavaLookupItem(psiElement);
+						final RubyLookupItem item = new ForeignLookupItem(psiElement);
 						map.put(item.getName(), item);
 					}
-				}
+				});
 			}
 
 			final Symbol context = SymbolUtil.getClassModuleFileSymbol(SymbolUtil.getSymbolByContainer(fileSymbol, container));

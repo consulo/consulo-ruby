@@ -30,6 +30,7 @@ import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.commands.COMMAND_CALL
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.Alias;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.Condition;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.LBegin;
+import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.Pattern;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.LEnd;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.controlStructures.Undef;
 import org.jetbrains.plugins.ruby.ruby.lang.parser.parsing.primary.PRIMARY;
@@ -95,6 +96,19 @@ stmt	: kALIAS fitem  fitem
 		{
 			marker.rollbackTo();
 			return RubyElementTypes.EMPTY_INPUT;
+		}
+
+/*
+        | arg tASSOC p_top_expr_body
+        | arg keyword_in p_top_expr_body
+*/
+		if(builder.compare(tASSOC) || builder.compare(kIN))
+		{
+			builder.advanceLexer();
+			Pattern.parseTop(builder, false);
+			marker.done(RubyElementTypes.PATTERN_MATCH);
+			marker = marker.precede();
+			result = RubyElementTypes.PATTERN_MATCH;
 		}
 /*
 		| stmt kIF_MOD expr_value

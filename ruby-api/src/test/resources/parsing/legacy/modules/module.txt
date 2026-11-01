@@ -1,0 +1,21 @@
+module Foo
+ expr
+end
+----------------
+Ruby file
+  Compound statement
+    Ruby:MODULE
+      PsiElement(module)('module')
+      PsiWhiteSpace(' ')
+      Module name
+        Constant
+          PsiElement(constant)('Foo')
+      PsiElement(end of line)('\n')
+      PsiWhiteSpace(' ')
+      Body statement
+        Compound statement
+          Identifier
+            PsiElement(identifier)('expr')
+      PsiElement(end of line)('\n')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

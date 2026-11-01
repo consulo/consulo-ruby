@@ -18,7 +18,6 @@ package org.jetbrains.plugins.ruby.ruby.sdk;
 
 import consulo.annotation.component.ExtensionImpl;
 import consulo.application.Application;
-import consulo.application.util.SystemInfo;
 import consulo.container.plugin.PluginManager;
 import consulo.content.OrderRootType;
 import consulo.content.base.BinariesOrderRootType;
@@ -27,7 +26,6 @@ import consulo.content.base.SourcesOrderRootType;
 import consulo.content.bundle.*;
 import consulo.localize.LocalizeValue;
 import consulo.logging.Logger;
-import consulo.ui.ex.awt.Messages;
 import consulo.ui.image.Image;
 import consulo.virtualFileSystem.LocalFileSystem;
 import consulo.virtualFileSystem.VirtualFile;
@@ -45,7 +43,12 @@ import org.jetbrains.plugins.ruby.ruby.run.Runner;
 import org.jetbrains.plugins.ruby.ruby.sdk.gemRootType.GemOrderRootType;
 import org.jetbrains.plugins.ruby.support.utils.VirtualFileUtil;
 
+import consulo.platform.Platform;
+
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.Consumer;
 import java.util.*;
 
 /**
@@ -55,7 +58,7 @@ import java.util.*;
  */
 
 @ExtensionImpl
-public class RubySdkType extends SdkType {
+public class RubySdkType extends PlatformAwareSdkType {
 
     /**
      * "/bin"
@@ -81,36 +84,9 @@ public class RubySdkType extends SdkType {
     @NonNls
     private static final String GET_GEM_PATHES_SCRIPT = "require 'rubygems'; puts Gem.path";
     @NonNls
-    private static final String GET_VERSION_SCRIPT = "print VERSION";
-    @NonNls
-    private static final String VERSION_ARG = "--version";
-    @NonNls
-    private static final String JAR = ".jar";
+    private static final String GET_VERSION_SCRIPT = "print RUBY_VERSION";
     @NonNls
     private static final String RUBY_SDK_NAME = "RUBY_SDK";
-    @NonNls
-    private static final String RUBY_WIN_EXE = "ruby.exe";
-    @NonNls
-    private static final String RUBY_UNIX_EXE = "ruby";
-    /**
-     * @deprecated Don't use direct this constant(you can affect JRubySdkType), use getRubyExecutable()
-     */
-    @NonNls
-    private static String RUBY_EXE;
-
-    static {
-        if (SystemInfo.isWindows) {
-            //noinspection deprecation
-            RUBY_EXE = RUBY_WIN_EXE;
-        }
-        else if (SystemInfo.isUnix) {
-            //noinspection deprecation
-            RUBY_EXE = RUBY_UNIX_EXE;
-        }
-        else {
-            LOG.error(RBundle.message("os.not.supported"));
-        }
-    }
 
     public RubySdkType() {
         super(RUBY_SDK_NAME, LocalizeValue.localizeTODO(RBundle.message("sdk.ruby.title")), RubyIcons.RUBY_ICON);
@@ -144,28 +120,88 @@ public class RubySdkType extends SdkType {
         return gemsRoots;
     }
 
+    /**
+     * @return the interpreter file name on this machine
+     */
     public String getRubyExecutable() {
-        //noinspection deprecation
-        return RUBY_EXE;
+        return getRubyExecutable(Platform.current());
     }
 
-    @Nonnull
-    @Override
-    public Collection<String> suggestHomePaths() {
-        String s = suggestHomePath();
-        if (s != null) {
-            return Collections.singletonList(s);
-        }
-        return super.suggestHomePaths();
+    public String getRubyExecutable(@Nonnull Platform platform) {
+        return platform.os().isWindows() ? "ruby.exe" : "ruby";
+    }
+
+    /**
+     * @return the script printing the version of the interpreter
+     */
+    protected String getVersionScript() {
+        return GET_VERSION_SCRIPT;
     }
 
     @Override
-    public boolean canCreatePredefinedSdks() {
+    public void collectHomePaths(Platform platform, Consumer<Path> pathConsumer) {
+        RubyHomeLocator.collect(platform, getRubyExecutable(platform), pathConsumer);
+    }
+
+    @Override
+    public boolean canCreatePredefinedSdks(Platform platform) {
         return true;
     }
 
-    protected String suggestHomePath() {
-        return RubySdkUtil.suggestRubyHomePath();
+    @Override
+    public Set<String> getEnvironmentVariables(Platform platform) {
+        return RubyHomeLocator.HOME_ENVIRONMENT_VARIABLES;
+    }
+
+    @Override
+    public Path adjustSelectedSdkHome(Platform platform, Path homePath) {
+        // the interpreter itself or its bin directory was chosen
+        Path fileName = homePath.getFileName();
+        if (fileName != null && fileName.toString().equals(getRubyExecutable(platform))) {
+            Path bin = homePath.getParent();
+            if (bin != null && bin.getParent() != null) {
+                return bin.getParent();
+            }
+        }
+        if (fileName != null && fileName.toString().equals("bin") && homePath.getParent() != null && Files.isRegularFile(homePath.resolve(getRubyExecutable(platform)))) {
+            return homePath.getParent();
+        }
+        return homePath;
+    }
+
+    @Override
+    public boolean isValidSdkHome(Platform platform, Path path) {
+        return Files.isRegularFile(path.resolve("bin").resolve(getRubyExecutable(platform)));
+    }
+
+    @Override
+    @Nullable
+    public String getVersionString(Platform platform, Path path) {
+        Path executable = path.resolve("bin").resolve(getRubyExecutable(platform));
+        if (!Files.isRegularFile(executable)) {
+            return null;
+        }
+        final Output output = Runner.run(executable.toString(), "-e", getVersionScript());
+        final String version = output.getStdout().trim();
+        if (version.isEmpty()) {
+            LOG.warn("Cannot get the version of " + executable + ": " + output.getStderr());
+            return null;
+        }
+        return version;
+    }
+
+    @Override
+    public String suggestSdkName(Platform platform, @Nullable String currentSdkName, Path path) {
+        final String version = getVersionString(platform, path);
+        final String manager = RubyHomeLocator.getManagerName(path);
+        StringBuilder name = new StringBuilder(getDisplayName().get());
+        if (version != null) {
+            name.append(' ').append(version);
+        }
+        if (manager != null) {
+            name.append(" (").append(manager).append(')');
+        }
+        return name.toString();
     }
 
     public String getExePath() {
@@ -179,23 +215,6 @@ public class RubySdkType extends SdkType {
 
     public void setGemsBinDirectory(@Nonnull final Sdk sdk, @Nonnull final String path) {
         getSdkAdditionalData(sdk).setGemsBinDirectory(path);
-    }
-
-    @Override
-    public boolean isValidSdkHome(final String path) {
-        return (new File(path + getExePath())).exists();
-    }
-
-    @Override
-    @Nullable
-    public String getVersionString(final String sdkHome) {
-        return getFullVersion(sdkHome);
-    }
-
-    @Override
-    public String suggestSdkName(final String currentSdkName, final String sdkHome) {
-        final String version = getShortVersion(sdkHome);
-        return getDisplayName().get() + (TextUtil.isEmpty(version) ? TextUtil.EMPTY_STRING : " " + version);
     }
 
     /**
@@ -227,12 +246,17 @@ public class RubySdkType extends SdkType {
             }
         }
 
-        File pluginPath = PluginManager.getPluginPath(RubySdkType.class);
-
-        // trying to add rubystubs from plugin jar file
-        final VirtualFile rubyStubsDir = LocalFileSystem.getInstance().findFileByIoFile(new File(pluginPath, RUBYSTUBS_DIR));
+        // stubs of the core library: generated from the RBS signatures of the interpreter, else the bundled ones
+        VirtualFile rubyStubsDir = null;
+        final Path generatedStubs = RubyStubsGenerator.generate(rubyInterpreterExecutable, sdk.getVersionString());
+        if (generatedStubs != null) {
+            rubyStubsDir = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(generatedStubs);
+        }
+        if (rubyStubsDir == null) {
+            rubyStubsDir = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(new File(PluginManager.getPluginPath(RubySdkType.class), RUBYSTUBS_DIR));
+        }
         if (rubyStubsDir != null) {
-            LOG.assertTrue(rubyStubsDir != null, "main.rb file cannot be null");
+            rubyStubsDir.refresh(false, true);
             urls.add(rubyStubsDir.getUrl());
         }
 
@@ -285,35 +309,6 @@ public class RubySdkType extends SdkType {
             rubySdkAdditionalData = new RubySdkAdditionalData();
         }
         return rubySdkAdditionalData;
-    }
-
-    @Nullable
-    private String getShortVersion(final String sdkHome) {
-        final Output output = RubyScriptRunner.runScriptFromSource(sdkHome + getExePath(), new String[]{}, GET_VERSION_SCRIPT, new String[]{});
-        return getSDKVersionByOutput(output, false);
-    }
-
-    @Nullable
-    private String getFullVersion(final String sdkHome) {
-        final Output output = Runner.run(sdkHome + getExePath(), VERSION_ARG);
-        return getSDKVersionByOutput(output, true);
-    }
-
-    private String getSDKVersionByOutput(@Nonnull final Output output, final boolean showErrorMsg) {
-        final String errorTitle = RBundle.message("sdk.error.cannot.create.sdk.title");
-        if (output.getStdout().contains("JAVA_HOME")) {
-            if (showErrorMsg) {
-                Messages.showErrorDialog(output.getStdout(), errorTitle);
-            }
-            return null;
-        }
-        else if (!TextUtil.isEmpty(output.getStderr())) {
-            if (showErrorMsg) {
-                Messages.showErrorDialog(output.getStderr(), errorTitle);
-            }
-            return null;
-        }
-        return output.getStdout();
     }
 
     @Override

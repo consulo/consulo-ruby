@@ -25,12 +25,12 @@ import consulo.execution.configuration.ConfigurationType;
 import consulo.execution.configuration.RunConfiguration;
 import consulo.project.Project;
 import org.jetbrains.plugins.ruby.RBundle;
+import org.jetbrains.plugins.ruby.rails.RailsUtil;
 import org.jetbrains.plugins.ruby.ruby.RubyIcons;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.RubyRunConfigurationUtil;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunConfiguration;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunConfigurationFactory;
 import consulo.module.Module;
-import consulo.application.util.SystemInfo;
 import consulo.ui.image.Image;
 
 /**
@@ -44,15 +44,10 @@ public class RailsServerRunConfigurationFactory extends RubyRunConfigurationFact
 	public static final String SERVER_TITLE = RBundle.message("run.configuration.server.title");
 	public final int RAILS_DEFAULT_PORT = 3000;
 
-	public final String WIN_LOCALHOST = "127.0.0.1";
-	public final String NOT_WIN_LOCALHOST = "0.0.0.0";
-
-
-	private static String LOCALHOST;
-
-	{
-		LOCALHOST = SystemInfo.isWindows ? WIN_LOCALHOST : NOT_WIN_LOCALHOST;
-	}
+	/**
+	 * Rails binds to localhost too: the development server is not reachable from other hosts
+	 */
+	public static final String LOCALHOST = "127.0.0.1";
 
 	public RailsServerRunConfigurationFactory(final ConfigurationType type)
 	{
@@ -85,7 +80,7 @@ public class RailsServerRunConfigurationFactory extends RubyRunConfigurationFact
 	{
 
 		initDefaultParams(conf);
-		conf.setName(RailsServerRunConfigurationFactory.SERVER_TITLE + ':' + module.getName());
+		conf.setName(RBundle.message("rails.run.configuration.server.name", module.getName()));
 
 		conf.setScriptPath(RailsServerRunConfiguration.getServerScriptPathByModule(module));
 		conf.setWorkingDirectory(RailsServerRunConfiguration.getRailsWorkDirByModule(module));
@@ -99,6 +94,12 @@ public class RailsServerRunConfigurationFactory extends RubyRunConfigurationFact
 		initDefaultParams(conf);
 
 		return conf;
+	}
+
+	@Override
+	public boolean isApplicable(@Nonnull Project project)
+	{
+		return RailsUtil.getAllModulesWithRailsSupport(project).length > 0;
 	}
 
 	@Override

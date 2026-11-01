@@ -149,7 +149,7 @@ public class RubyRangeHighlightPass extends AbstractRubyHighlighterPass
 
 				final RFile rFile = RubyPsiUtil.getRFile(rIdentifier);
 				assert rFile != null;
-				if(rFile.isJRubyEnabled() && (RCall.IMPORT_COMMAND.equals(text) ||
+				if(rFile.isInteropEnabled() && (RCall.IMPORT_COMMAND.equals(text) || RCall.JAVA_IMPORT_COMMAND.equals(text) ||
 						RCall.INCLUDE_CLASS_COMMAND.equals(text) ||
 						RCall.INCLUDE_PACKAGE_COMMAND.equals(text)))
 				{
@@ -265,7 +265,7 @@ public class RubyRangeHighlightPass extends AbstractRubyHighlighterPass
 		{
 			final RFile rFile = RubyPsiUtil.getRFile(rCall);
 			assert rFile != null;
-			if(rFile.isJRubyEnabled())
+			if(rFile.isInteropEnabled())
 			{
 				myCollection.add(HighlightInfo.newHighlightInfo(RubyHighlightInfoType.JRUBY_INCLUDE_JAVA_HIGHTLIGHT).range(rCall.getPsiCommand()).create());
 			}
@@ -276,7 +276,7 @@ public class RubyRangeHighlightPass extends AbstractRubyHighlighterPass
 		{
 			final RFile rFile = RubyPsiUtil.getRFile(rCall);
 			assert rFile != null;
-			if(rFile.isJRubyEnabled())
+			if(rFile.isInteropEnabled())
 			{
 				myCollection.add(HighlightInfo.newHighlightInfo(RubyHighlightInfoType.JRUBY_INCLUDE_JAVA_HIGHTLIGHT).range(rCall.getPsiCommand()).create());
 			}
@@ -287,7 +287,7 @@ public class RubyRangeHighlightPass extends AbstractRubyHighlighterPass
 		{
 			final RFile rFile = RubyPsiUtil.getRFile(rCall);
 			assert rFile != null;
-			if(rFile.isJRubyEnabled())
+			if(rFile.isInteropEnabled())
 			{
 				myCollection.add(HighlightInfo.newHighlightInfo(RubyHighlightInfoType.JRUBY_INCLUDE_JAVA_HIGHTLIGHT).range(rCall.getPsiCommand()).create());
 			}

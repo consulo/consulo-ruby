@@ -1,0 +1,23 @@
+def A::foo
+end
+---------
+Ruby file
+  Compound statement
+    Ruby:SINGLETON_METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Class object
+          Constant
+            PsiElement(constant)('A')
+        PsiElement(::)('::')
+        Function name
+          PsiElement(identifier)('foo')
+      Command argument list
+        <empty list>
+      PsiElement(end of line)('\n')
+      Body statement
+        Compound statement
+          <empty list>
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

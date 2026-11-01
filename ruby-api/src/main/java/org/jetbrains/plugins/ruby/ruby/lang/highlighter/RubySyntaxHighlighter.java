@@ -90,6 +90,11 @@ public class RubySyntaxHighlighter extends SyntaxHighlighterBase implements Ruby
 
 		ATTRIBUTES.put(tASSOC, RubyHighlighterKeys.HASH_ASSOC);
 
+		ATTRIBUTES.put(tLABEL, RubyHighlighterKeys.SYMBOL);
+		ATTRIBUTES.put(tLAMBDA, RubyHighlighterKeys.OPERATION_SIGN);
+		ATTRIBUTES.put(tANDDOT, RubyHighlighterKeys.OPERATION_SIGN);
+		ATTRIBUTES.put(tDSTAR, RubyHighlighterKeys.OPERATION_SIGN);
+
 	}
 
 

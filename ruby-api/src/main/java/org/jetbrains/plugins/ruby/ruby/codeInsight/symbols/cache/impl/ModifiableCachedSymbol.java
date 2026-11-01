@@ -59,13 +59,13 @@ public class ModifiableCachedSymbol extends AbstractCachedSymbol
 
 	private FileSymbol myOuterSymbol;
 	private String myUrl;
-	private boolean isJRubyEnabled;
+	private boolean isInteropEnabled;
 
-	public ModifiableCachedSymbol(@Nonnull final Project project, @Nonnull final String url, @Nullable final Module module, @Nullable final Sdk sdk, final boolean jRubyEnabled)
+	public ModifiableCachedSymbol(@Nonnull final Project project, @Nonnull final String url, @Nullable final Module module, @Nullable final Sdk sdk, final boolean interopEnabled)
 	{
 		super(project, module, sdk);
 		myUrl = url;
-		isJRubyEnabled = jRubyEnabled;
+		isInteropEnabled = interopEnabled;
 	}
 
 	@Override
@@ -113,7 +113,7 @@ public class ModifiableCachedSymbol extends AbstractCachedSymbol
 		{
 			return;
 		}
-		myOuterSymbol = new FileSymbol(SymbolCacheUtil.getFileSymbol(getBaseSymbol()), myProject, isJRubyEnabled);
+		myOuterSymbol = new FileSymbol(SymbolCacheUtil.getFileSymbol(getBaseSymbol()), myProject, isInteropEnabled);
 		FileSymbolUtil.process(myOuterSymbol, myUrl, InterpretationMode.EXTERNAL, false);
 
 		// Adding rails specified symbol if needed
@@ -138,7 +138,7 @@ public class ModifiableCachedSymbol extends AbstractCachedSymbol
 
 		if(myFileSymbol == null)
 		{
-			myFileSymbol = new FileSymbol(myOuterSymbol, myProject, isJRubyEnabled);
+			myFileSymbol = new FileSymbol(myOuterSymbol, myProject, isInteropEnabled);
 			FileSymbolUtil.process(myFileSymbol, myUrl, InterpretationMode.IGNORE_EXTERNAL, true);
 			myAllExternalUrls = FileSymbolUtil.getUrls(myFileSymbol);
 			myRequires = file.getRequiredUrls();
@@ -165,10 +165,10 @@ public class ModifiableCachedSymbol extends AbstractCachedSymbol
 		{
 			return null;
 		}
-		if(RubySdkUtil.isKindOfRubySDK(mySdk))
+		// a module without a Ruby SDK, e.g. one running JRuby from its dependencies, takes the bundled core stubs
+		if(RubySdkUtil.isKindOfRubySDK(mySdk) || mySdk == null && myModule != null)
 		{
-			final String stubsDir = RubySdkUtil.getRubyStubsDirUrl(mySdk);
-			if(stubsDir == null)
+			if(mySdk != null && RubySdkUtil.getRubyStubsDirUrl(mySdk) == null)
 			{
 				return null;
 			}
@@ -182,13 +182,13 @@ public class ModifiableCachedSymbol extends AbstractCachedSymbol
 				final FileSymbolType railsLayerType = RailsRequireUtil.getRailsLayerType(file, myModule);
 				if(railsLayerType != null)
 				{
-					return cache.getCachedSymbol(railsLayerType, myModule, mySdk, isJRubyEnabled);
+					return cache.getCachedSymbol(railsLayerType, myModule, mySdk, isInteropEnabled);
 				}
 				// return rails module layer
-				return cache.getCachedSymbol(FileSymbolType.RAILS_MODULE_LAYER, myModule, mySdk, isJRubyEnabled);
+				return cache.getCachedSymbol(FileSymbolType.RAILS_MODULE_LAYER, myModule, mySdk, isInteropEnabled);
 			}
 			// Else we return just module layer
-			return cache.getCachedSymbol(FileSymbolType.MODULE_LAYER, myModule, mySdk, isJRubyEnabled);
+			return cache.getCachedSymbol(FileSymbolType.MODULE_LAYER, myModule, mySdk, isInteropEnabled);
 		}
 		return null;
 	}

@@ -16,6 +16,7 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.paramDefs;
 
+import consulo.language.psi.PsiFile;
 import consulo.module.Module;
 import consulo.project.Project;
 import jakarta.annotation.Nonnull;
@@ -64,7 +65,9 @@ public class ParamContext
 
 	public Module getModule()
 	{
-		return myValueElement.getModule();
+		// completion runs on a copy of the file, which belongs to no module
+		final PsiFile file = myValueElement.getContainingFile();
+		return file != null ? file.getOriginalFile().getModule() : myValueElement.getModule();
 	}
 
 	public Project getProject()

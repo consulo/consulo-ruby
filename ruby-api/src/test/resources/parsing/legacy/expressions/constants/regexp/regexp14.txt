@@ -1,0 +1,16 @@
+666 /foo/
+-----
+Ruby file
+  Compound statement
+    Math binary expression
+      Math binary expression
+        Integer
+          PsiElement(integer literal)('666')
+        PsiWhiteSpace(' ')
+        PsiElement(/)('/')
+        Identifier
+          PsiElement(identifier)('foo')
+      PsiElement(/)('/')
+      PsiErrorElement:Expected: expression
+        <empty list>
+  PsiWhiteSpace('\n')

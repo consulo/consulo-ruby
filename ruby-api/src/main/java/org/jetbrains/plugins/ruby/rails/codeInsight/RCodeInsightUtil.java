@@ -16,7 +16,6 @@
 
 package org.jetbrains.plugins.ruby.rails.codeInsight;
 
-import com.intellij.java.language.psi.PsiReferenceExpression;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiElementVisitor;
 import consulo.language.psi.PsiFile;
@@ -138,12 +137,6 @@ public class RCodeInsightUtil
 			myStartOffset = startOffset;
 			myList = list;
 			myOffset = currentOffset;
-		}
-
-		@Override
-		public void visitReferenceExpression(PsiReferenceExpression expression)
-		{
-			visitElement(expression);
 		}
 
 		@Override

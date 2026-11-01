@@ -63,6 +63,4 @@ public interface RComponents extends RubyComponents, RailsComponents
 	final String RUBY_USAGE_GROUP_RULE_PROVIDER = "RubyUsageGroupRuleProvider";
 	@NonNls
 	final String RUBY_PSI_MANAGER = "RubyPsiManager";
-	@NonNls
-	final String JRUBY_SDK_TABLE_LISTENER = "JRubySdkTableListener";
 }

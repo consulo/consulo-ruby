@@ -1,0 +1,26 @@
+{a=>b c=>d}
+------------
+Ruby file
+  Compound statement
+    Assoc list
+      PsiElement({)('{')
+      Assoc
+        Identifier
+          PsiElement(identifier)('a')
+        PsiElement(=>)('=>')
+        Identifier
+          PsiElement(identifier)('b')
+      PsiErrorElement:Expected: }
+        <empty list>
+    PsiWhiteSpace(' ')
+    Pattern match
+      Identifier
+        PsiElement(identifier)('c')
+      PsiElement(=>)('=>')
+      Pattern
+        Identifier
+          PsiElement(identifier)('d')
+    PsiErrorElement:Expected: ; or end of line
+      <empty list>
+    PsiElement(})('}')
+  PsiElement(end of line)('\n')

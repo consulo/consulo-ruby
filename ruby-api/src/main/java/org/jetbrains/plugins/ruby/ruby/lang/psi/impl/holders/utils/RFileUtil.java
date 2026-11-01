@@ -245,7 +245,7 @@ public class RFileUtil
 	private static Sdk getSdkByModule(@Nonnull final Project project, @Nonnull VirtualFile file)
 	{
 		final Module module = getModule(project, file);
-		return module != null ? RModuleUtil.getModuleOrJRubyFacetSdk(module) : null;
+		return module != null ? RModuleUtil.getModuleSdk(module) : null;
 	}
 
 	private static Sdk tryToFindSdk(@Nonnull final Project project, @Nonnull final VirtualFile file)

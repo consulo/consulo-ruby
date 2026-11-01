@@ -15,6 +15,7 @@
  */
 package org.jetbrains.plugins.ruby.ruby.lang.psi;
 
+import consulo.platform.base.icon.PlatformIconGroup;
 import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.access.RequiredWriteAction;
 import consulo.component.util.Iconable;
@@ -90,6 +91,14 @@ public class RubyPsiUtil {
         return (RFile) createFileFromText(project, TEMP_FILE_NAME, type, text);
     }
 
+
+    /**
+     * @return a line break element to insert between statements
+     */
+    public static PsiElement createNewLine(Project project) {
+        RFile file = createDummyRubyFile(project, "a\nb");
+        return file.getCompoundStatement().getNode().getChildren(null)[1].getPsi();
+    }
 
     public static List<RPsiElement> getTopLevelElements(Project project, @Nonnull String text) {
         RFile rFile = createDummyRubyFile(project, text);
@@ -297,8 +306,12 @@ public class RubyPsiUtil {
                 if (type == StructureType.CALL_EXTEND) {
                     yield RubyIcons.RUBY_INCLUDE_NODE;
                 }
-                if (type == StructureType.CALL_INCLUDE_CLASS || type == StructureType.CALL_INCLUDE_PACKAGE) {
-                    yield RubyIcons.RUBY_INCLUDE_NODE;
+                // JRuby: a Java class or a whole Java package
+                if (type == StructureType.CALL_INCLUDE_CLASS) {
+                    yield PlatformIconGroup.nodesClass();
+                }
+                if (type == StructureType.CALL_INCLUDE_PACKAGE) {
+                    yield PlatformIconGroup.nodesPackage();
                 }
                 if (type == StructureType.FIELD_ATTR_CALL) {
                     yield RFieldAttrPresentationUtil.getAttrIcon(((RCallBase) call).getFieldAttrType());

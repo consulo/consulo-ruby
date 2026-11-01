@@ -4,7 +4,7 @@ import consulo.content.bundle.SdkType;
 import consulo.module.content.layer.ModuleRootLayer;
 import consulo.module.content.layer.extension.ModuleExtensionWithSdkBase;
 import jakarta.annotation.Nonnull;
-import org.jetbrains.plugins.ruby.jruby.facet.RSupportPerModuleSettingsImpl;
+import org.jetbrains.plugins.ruby.settings.RSupportPerModuleSettingsImpl;
 import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkType;
 import org.jetbrains.plugins.ruby.settings.RSupportPerModuleSettings;
 

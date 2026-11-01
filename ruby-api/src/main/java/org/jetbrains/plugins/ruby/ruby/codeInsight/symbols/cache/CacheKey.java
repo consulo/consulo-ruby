@@ -35,15 +35,15 @@ public class CacheKey
 	private final Module module;
 	private final Sdk sdk;
 	private FileSymbolType type;
-	private boolean isJRubyEnabled;
+	private boolean isInteropEnabled;
 
-	public CacheKey(@Nonnull final FileSymbolType type, @Nullable final String url, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isJRubyEnabled)
+	public CacheKey(@Nonnull final FileSymbolType type, @Nullable final String url, @Nullable final Module module, @Nullable final Sdk sdk, final boolean isInteropEnabled)
 	{
 		this.type = type;
 		this.url = url;
 		this.module = module;
 		this.sdk = sdk;
-		this.isJRubyEnabled = isJRubyEnabled;
+		this.isInteropEnabled = isInteropEnabled;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ public class CacheKey
 
 		final CacheKey cacheKey = (CacheKey) o;
 
-		if(isJRubyEnabled != cacheKey.isJRubyEnabled)
+		if(isInteropEnabled != cacheKey.isInteropEnabled)
 		{
 			return false;
 		}
@@ -95,7 +95,7 @@ public class CacheKey
 		result = 31 * result + (module != null ? module.hashCode() : 0);
 		result = 31 * result + (sdk != null ? sdk.hashCode() : 0);
 		result = 31 * result + type.hashCode();
-		result = 31 * result + (isJRubyEnabled ? 1 : 0);
+		result = 31 * result + (isInteropEnabled ? 1 : 0);
 		return result;
 	}
 }

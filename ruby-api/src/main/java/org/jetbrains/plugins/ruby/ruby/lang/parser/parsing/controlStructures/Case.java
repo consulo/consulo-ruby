@@ -69,16 +69,23 @@ public class Case implements RubyTokenTypes
 
 		TERMS.parseOpt(builder);
 
-		// when
-		while(builder.compareIgnoreEOL(kWHEN))
+		// when, in
+		while(builder.compareIgnoreEOL(kWHEN) || builder.compareIgnoreEOL(kIN))
 		{
+			if(builder.compareIgnoreEOL(kIN))
+			{
+				RMarker inMarker = builder.mark();
+				builder.matchIgnoreEOL(kIN);
+				Pattern.parseTop(builder, true);
+				THEN.parse(builder);
+				COMPSTMT.parse(builder, kIN, kELSE, kEND);
+				inMarker.done(RubyElementTypes.IN_CASE);
+				continue;
+			}
 			RMarker whenMarker = builder.mark();
 			builder.match(kWHEN);
-
 			parseWhenArgs(builder);
-
 			THEN.parse(builder);
-
 			COMPSTMT.parse(builder, kWHEN, kELSE, kEND);
 			whenMarker.done(RubyElementTypes.WHEN_CASE);
 		}

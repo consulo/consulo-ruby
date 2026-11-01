@@ -79,10 +79,5 @@ public class RailsBuiltInCachedSymbol extends BuiltInCachedSymbol
 
 		// Action Mailer
 		MailersConventions.loadBuiltInGems(myFileSymbol, InterpretationMode.FULL);
-
-		// Load addon file for web service
-		final String url = SymbolCacheUtil.getStubUrl(mySdk, StubsUrls.ACTIVE_SUPPORT_ACTION_MAILER_ADDON_RB);
-		LOG.assertTrue(url != null);
-		FileSymbolUtil.process(myFileSymbol, url, InterpretationMode.FULL, false);
 	}
 }

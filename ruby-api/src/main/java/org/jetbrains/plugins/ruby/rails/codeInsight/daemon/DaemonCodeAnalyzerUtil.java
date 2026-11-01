@@ -38,7 +38,6 @@ public class DaemonCodeAnalyzerUtil
 	@Nullable
 	public static RailsLineMarkerInfo[] getLineMarkers(final Document document, final Project project)
 	{
-		ApplicationManager.getApplication().assertIsDispatchThread();
 		MarkupModel markup = DocumentMarkupModel.forDocument(document, project, false);
 		return markup.getUserData(RAILS_MARKERS_IN_EDITOR_DOCUMENT_KEY);
 	}

@@ -1,0 +1,11 @@
+foo.
+-----
+Ruby file
+  Compound statement
+    Dot reference
+      Identifier
+        PsiElement(identifier)('foo')
+      PsiElement(.)('.')
+      PsiErrorElement:Expected: operation
+        <empty list>
+  PsiWhiteSpace('\n')

@@ -1,0 +1,37 @@
+def foo(a = b * c) /regexp/ end
+--------
+Ruby file
+  Compound statement
+    Ruby:METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Function name
+          PsiElement(identifier)('foo')
+      PsiElement(()('(')
+      Function argument list
+        Predefined argument
+          Identifier
+            PsiElement(identifier)('a')
+          PsiWhiteSpace(' ')
+          PsiElement(=)('=')
+          PsiWhiteSpace(' ')
+          Math binary expression
+            Identifier
+              PsiElement(identifier)('b')
+            PsiWhiteSpace(' ')
+            PsiElement(*)('*')
+            PsiWhiteSpace(' ')
+            Identifier
+              PsiElement(identifier)('c')
+      PsiElement())(')')
+      PsiWhiteSpace(' ')
+      Body statement
+        Compound statement
+          Regular expression
+            PsiElement(regexp beginning)('/')
+            PsiElement(regexp content)('regexp')
+            PsiElement(regexp end)('/')
+      PsiWhiteSpace(' ')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

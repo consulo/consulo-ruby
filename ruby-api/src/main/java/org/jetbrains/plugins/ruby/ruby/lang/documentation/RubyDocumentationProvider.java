@@ -29,7 +29,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.LastSymbolStorage;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.RubyOverrideImplementUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Types;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.FileSymbol;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.RubyLanguage;
@@ -90,8 +90,8 @@ public class RubyDocumentationProvider implements LanguageDocumentationProvider 
                 final List<Symbol> symbols = ResolveUtil.resolveToSymbols(element);
                 final Symbol symbol = symbols.get(index);
                 // Java symbols handling
-                if (Types.JAVA.contains(symbol.getType())) {
-                    return ((JavaSymbol) symbol).getPsiElement();
+                if (Types.FOREIGN.contains(symbol.getType())) {
+                    return ((ForeignSymbol) symbol).getPsiElement();
                 }
                 final RPsiElement prototype = symbol.getLastVirtualPrototype(fileSymbol);
                 return prototype != null ? RVirtualPsiUtil.findPsiByVirtualElement(prototype, project) : null;

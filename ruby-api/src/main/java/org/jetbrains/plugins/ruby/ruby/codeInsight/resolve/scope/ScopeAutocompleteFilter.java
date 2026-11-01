@@ -28,7 +28,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolFilte
 public interface ScopeAutocompleteFilter
 {
 
-	boolean allowJRuby();
+	boolean allowForeign();
 
 	boolean allowOutterMembers();
 

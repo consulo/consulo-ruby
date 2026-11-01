@@ -47,10 +47,7 @@ public class RSpecRunConfigurationFactory extends RubyRunConfigurationFactory
 		final RSpecRunConfiguration conf = new RSpecRunConfiguration(project, this, "");
 
 		conf.setRubyArgs(RubyRunConfigurationUtil.collectArguments(RubyUtil.RUN_IN_CONSOLE_HACK_ARGUMENTS));
-		conf.setCustomSpecsRunnerPath(RSpecRunConfiguration.DEFAULT_CUSTOM_SPEC_RUNNER);
-		conf.setSpecArgs(RSpecRunConfiguration.DEFAULT_SPEC_ARGS);
 		conf.setTestFileMask(RSpecRunConfiguration.DEFAULT_TESTS_SEARCH_MASK);
-		conf.setShouldUseCustomSpecRunner(false);
 		return conf;
 	}
 

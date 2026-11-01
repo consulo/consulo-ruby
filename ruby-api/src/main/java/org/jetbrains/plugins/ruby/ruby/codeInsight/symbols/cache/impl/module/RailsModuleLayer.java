@@ -40,9 +40,9 @@ public class RailsModuleLayer extends ModuleLayer
 {
 	private final String myLayerRootUrl;
 
-	public RailsModuleLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean jRubyEnabled)
+	public RailsModuleLayer(@Nonnull final Project project, @Nullable final Module module, @Nullable final Sdk sdk, final boolean interopEnabled)
 	{
-		super(project, module, sdk, jRubyEnabled);
+		super(project, module, sdk, interopEnabled);
 		assert module != null;
 		final StandardRailsPaths railsPaths = RailsFacetUtil.getRailsAppPaths(module);
 		assert railsPaths != null; //Not null for modules with Rails Support
@@ -74,7 +74,7 @@ public class RailsModuleLayer extends ModuleLayer
 	protected CachedSymbol getBaseSymbol()
 	{
 		final SymbolsCache cache = SymbolsCache.getInstance(myProject);
-		return cache.getBuiltInCachedSymbol(FileSymbolType.RAILS_BUILT_IN, mySdk, isJRubyEnabled);
+		return cache.getBuiltInCachedSymbol(FileSymbolType.RAILS_BUILT_IN, mySdk, isInteropEnabled);
 	}
 
 	@Override

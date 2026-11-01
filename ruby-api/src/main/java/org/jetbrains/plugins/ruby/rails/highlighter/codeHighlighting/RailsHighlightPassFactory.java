@@ -87,15 +87,18 @@ public class RailsHighlightPassFactory implements TextEditorHighlightingPassFact
 		//[HACK] may be it is hack.. Removes all Rails Highlighter if Rails Facet was deleted from module.
 		final Document document = editor.getDocument();
 		final Project project = psiFile.getProject();
-		final MarkupModel markupModel = DocumentMarkupModel.forDocument(document, project, false);
 		final RailsLineMarkerInfo[] markers = DaemonCodeAnalyzerUtil.getLineMarkers(document, project);
-		//removes all Rails specific markers
-		if(markers != null)
+		//removes all Rails specific markers - the passes are created in the background, the markup model is UI only
+		if(markers != null && markers.length > 0)
 		{
-			for(RailsLineMarkerInfo marker : markers)
-			{
-				markupModel.removeHighlighter(marker.highlighter);
-			}
+			project.getApplication().invokeLater(() -> {
+				final MarkupModel markupModel = DocumentMarkupModel.forDocument(document, project, false);
+				for(RailsLineMarkerInfo marker : markers)
+				{
+					markupModel.removeHighlighter(marker.highlighter);
+				}
+				DaemonCodeAnalyzerUtil.setRubyLineMarkers(document, null, project);
+			}, project.getDisposed());
 		}
 		return null;
 	}

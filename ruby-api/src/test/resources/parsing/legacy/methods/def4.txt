@@ -1,0 +1,34 @@
+def method_name(a=12, b)
+    expr3
+end
+------------
+Ruby file
+  Compound statement
+    Ruby:METHOD
+      PsiElement(def)('def')
+      PsiWhiteSpace(' ')
+      Method name
+        Function name
+          PsiElement(identifier)('method_name')
+      PsiElement(()('(')
+      Function argument list
+        Predefined argument
+          Identifier
+            PsiElement(identifier)('a')
+          PsiElement(=)('=')
+          Integer
+            PsiElement(integer literal)('12')
+        PsiElement(,)(',')
+        PsiWhiteSpace(' ')
+        Argument
+          Identifier
+            PsiElement(identifier)('b')
+      PsiElement())(')')
+      PsiWhiteSpace('\n    ')
+      Body statement
+        Compound statement
+          Identifier
+            PsiElement(identifier)('expr3')
+      PsiElement(end of line)('\n')
+      PsiElement(end)('end')
+  PsiElement(end of line)('\n')

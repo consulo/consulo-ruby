@@ -65,7 +65,7 @@ assoc_list	: none
 					return result;
 				}
 
-				if(assocSeen && result != RubyElementTypes.ASSOC)
+				if(assocSeen && !ASSOC_OR_ARG.isAllowedAfterAssoc(result))
 				{
 					builder.error(ErrorMsg.expected(tASSOC));
 				}

@@ -16,6 +16,8 @@
 
 package org.jetbrains.plugins.ruby.ruby.run.confuguration;
 
+import consulo.ruby.runtime.RubyRuntime;
+import consulo.ruby.runtime.SdkRubyRuntime;
 import java.io.File;
 
 import consulo.execution.RunManager;
@@ -33,7 +35,6 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.RFile;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunConfiguration;
 import org.jetbrains.plugins.ruby.ruby.run.confuguration.rubyScript.RubyRunConfigurationFactory;
 import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkUtil;
-import org.jetbrains.plugins.ruby.ruby.sdk.jruby.JRubySdkType;
 import consulo.process.ExecutionException;
 import consulo.module.Module;
 import consulo.content.bundle.Sdk;
@@ -93,17 +94,12 @@ public class RubyRunConfigurationUtil
 
 	public static void inspectSDK(final AbstractRubyRunConfiguration conf, final boolean isExecution) throws Exception
 	{
-		// SDK inspection
-		final Sdk sdk = conf.getSdk();
-		if(sdk == null)
+		final RubyRuntime runtime = conf.getRuntime();
+		if(runtime == null)
 		{
 			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("sdk.no.specified"), isExecution);
 		}
-		if(!RubySdkUtil.isKindOfRubySDK(sdk))
-		{
-			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("sdk.type.incorrect"), isExecution);
-		}
-		if(!RubySdkUtil.isSDKHomeExist(sdk))
+		if(runtime instanceof SdkRubyRuntime sdkRuntime && !RubySdkUtil.isSDKHomeExist(sdkRuntime.getSdk()))
 		{
 			RubyRunConfigurationUtil.throwExecutionOrRuntimeException(RBundle.message("sdk.type.incorrect.homepath"), isExecution);
 		}
@@ -145,8 +141,7 @@ public class RubyRunConfigurationUtil
 	 */
 	public static void setupRubyArgs(final AbstractRubyRunConfiguration conf, final String rubyArgs)
 	{
-		final Sdk sdk = conf.getSdk();
-		if((sdk == null || !JRubySdkType.isJRubySDK(sdk)) && TextUtil.isEmptyOrWhitespaces(conf.getRubyArgs()))
+		if(TextUtil.isEmptyOrWhitespaces(conf.getRubyArgs()))
 		{
 			conf.setRubyArgs(rubyArgs);
 		}

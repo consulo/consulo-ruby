@@ -16,6 +16,8 @@
 
 package org.jetbrains.plugins.ruby.ruby.actions.intention;
 
+import consulo.annotation.component.ExtensionImpl;
+import consulo.language.editor.intention.IntentionMetaData;
 import consulo.codeEditor.Editor;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
@@ -40,6 +42,8 @@ import org.jetbrains.plugins.ruby.ruby.lang.psi.impl.holders.utils.RFileUtil;
  * @author: Roman Chernyatchik
  * @date: 16.07.2007
  */
+@ExtensionImpl
+@IntentionMetaData(ignoreId = "ruby.AppendCurrentDirToPathIntention", categories = "Ruby", fileExtensions = "rb")
 public class AppendCurrentDirToPathIntention extends RequirePathIntention
 {
 	private static final LocalizeValue TEXT = LocalizeValue.localizeTODO(RBundle.message("ruby.intentions.append.cur.dir.to.path"));

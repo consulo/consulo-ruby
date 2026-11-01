@@ -16,14 +16,14 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.paramInfo;
 
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RPsiElement;
 
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RStructuralElement;
 
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RFile;
 
-import com.intellij.java.impl.codeInsight.hint.api.impls.MethodParameterInfoHandler;
-import com.intellij.java.language.psi.PsiMethod;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.language.Language;
 import consulo.language.ast.ASTNode;
@@ -41,7 +41,7 @@ import org.jetbrains.plugins.ruby.ruby.codeInsight.resolve.ResolveUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.LastSymbolStorage;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Type;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Types;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.JavaSymbol;
+import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.ForeignSymbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.RubyLanguage;
@@ -139,18 +139,13 @@ public class RubyParameterInfoHandler implements ParameterInfoHandler<RPossibleC
 	@Override
 	public void updateUI(@Nonnull final Symbol symbol, @Nonnull final ParameterInfoUIContext context)
 	{
-		if(symbol.getType() == Type.JAVA_METHOD)
+		if(symbol.getType() == Type.FOREIGN_METHOD)
 		{
-			final PsiElement element = ((JavaSymbol) symbol).getPsiElement();
-			assert element instanceof PsiMethod;
-			try
+			final PsiElement element = ((ForeignSymbol) symbol).getPsiElement();
+			final RubyInteropProvider provider = RubyInterop.forElement(element);
+			if(provider != null)
 			{
-				MethodParameterInfoHandler.updateMethodPresentation((PsiMethod) element, null, context);
-			}
-			catch(NoSuchMethodError e)
-			{
-				// TODO: remove try\catch after 7.0.3. See RUBY-1295
-				// updateMethodPresentation() has private access before 7.0.3 - ignore if it's not available
+				provider.updateParameterInfo(element, context);
 			}
 		}
 		else

@@ -16,26 +16,31 @@
 
 package org.jetbrains.plugins.ruby.ruby.run.confuguration;
 
+import consulo.localize.LocalizeValue;
 import consulo.application.Application;
-import consulo.content.bundle.Sdk;
 import consulo.execution.CantRunException;
 import consulo.execution.RuntimeConfigurationException;
 import consulo.execution.configuration.CommandLineState;
 import consulo.execution.process.ProcessTerminatedListener;
 import consulo.execution.runner.ExecutionEnvironment;
-import consulo.module.Module;
-import consulo.module.content.ModuleRootManager;
-import consulo.module.content.layer.OrderEnumerator;
+import consulo.platform.Platform;
 import consulo.process.ExecutionException;
 import consulo.process.ProcessHandler;
 import consulo.process.ProcessHandlerBuilder;
 import consulo.process.ProcessHandlerBuilderFactory;
 import consulo.process.cmd.GeneralCommandLine;
+import consulo.util.lang.StringUtil;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import consulo.ruby.runtime.RubyRuntime;
+import org.jetbrains.plugins.ruby.RBundle;
 import org.jetbrains.plugins.ruby.ruby.run.Runner;
-import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkUtil;
-import org.jetbrains.plugins.ruby.ruby.sdk.jruby.JRubySdkType;
 import org.jetbrains.plugins.ruby.settings.RApplicationSettings;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by IntelliJ IDEA.
@@ -44,16 +49,50 @@ import org.jetbrains.plugins.ruby.settings.RApplicationSettings;
  * @date: Nov 7, 2007
  */
 public abstract class ColouredCommandLineState extends CommandLineState {
+    private static final String RUBYOPT = "RUBYOPT";
+
+    private final List<String> myRequiredLibraries = new ArrayList<>();
+    private final Map<String, String> myExtraEnvironment = new LinkedHashMap<>();
+
     protected ColouredCommandLineState(ExecutionEnvironment environment) {
         super(environment);
+    }
+
+    /**
+     * Loads a library before the program, whatever the command line runs: a debugger, for example.
+     */
+    public void addRequiredLibrary(String path) {
+        myRequiredLibraries.add(path);
+    }
+
+    public void addEnvironment(String name, String value) {
+        myExtraEnvironment.put(name, value);
     }
 
     @Override
     protected ProcessHandler startProcess() throws ExecutionException {
         final GeneralCommandLine cmdLine = createCommandLine();
+        cmdLine.withEnvironment(myExtraEnvironment);
+        if (!myRequiredLibraries.isEmpty()) {
+            // RUBYOPT libraries load after the ones of the command line, bundler/setup included
+            StringBuilder rubyOpt = new StringBuilder(StringUtil.notNullize(getInheritedRubyOpt(cmdLine)));
+            for (String library : myRequiredLibraries) {
+                rubyOpt.append(rubyOpt.isEmpty() ? "" : " ").append("-r").append(library);
+            }
+            cmdLine.withEnvironment(RUBYOPT, rubyOpt.toString());
+        }
         final ProcessHandler processHandler = createOSProcessHandler(cmdLine);
         ProcessTerminatedListener.attach(processHandler);
         return processHandler;
+    }
+
+    @Nullable
+    private static String getInheritedRubyOpt(GeneralCommandLine cmdLine) {
+        String rubyOpt = cmdLine.getEnvironment().get(RUBYOPT);
+        if (rubyOpt == null && cmdLine.getParentEnvironmentType() != GeneralCommandLine.ParentEnvironmentType.NONE) {
+            rubyOpt = Platform.current().os().getEnvironmentVariable(RUBYOPT);
+        }
+        return rubyOpt;
     }
 
     public GeneralCommandLine createCommandLine() throws ExecutionException {
@@ -73,32 +112,15 @@ public abstract class ColouredCommandLineState extends CommandLineState {
     protected GeneralCommandLine createGeneralDefaultCmdLine(@Nonnull final AbstractRubyRunConfiguration config) throws CantRunException {
         checkConfiguration(config);
 
-        final Sdk sdk = config.getSdk();
-        assert (sdk != null);
-
+        final RubyRuntime runtime = config.getRuntime();
+        if (runtime == null) {
+            throw new CantRunException(LocalizeValue.localizeTODO(RBundle.message("sdk.no.specified")));
+        }
 
         final String workingDir = config.getWorkingDirectory().trim().length() != 0 ? config.getWorkingDirectory() : null;
 
-        /* Uncomment to set working directory by ruby itself
-            commandLine.addParameter("-C");
-            commandLine.addParameter(myConfig.getWORK_DIR());
-        */
-
-        final Module module = config.getModule();
-        final String classPath;
-        if (module == null || !JRubySdkType.isJRubySDK(sdk)) {
-            classPath = null;
-        }
-        else {
-            ModuleRootManager moduleRootManager = ModuleRootManager.getInstance(module);
-
-            OrderEnumerator orderEnumerator = moduleRootManager.orderEntries();
-            orderEnumerator = orderEnumerator.withoutSdk().recursively();
-
-            classPath = orderEnumerator.getSourcePathsList().getPathsString();
-        }
-
-        return Runner.createAndSetupCmdLine(null, workingDir, classPath, config.getEnvs(), config.isPassParentEnvs(), RubySdkUtil.getVMExecutablePath(sdk));
+        return Runner.createAndSetupCmdLine(null, workingDir, config.getEnvs(), config.isPassParentEnvs(), runtime.getExecutablePath(),
+            runtime.getExecutableParameters().toArray(String[]::new));
     }
 
     protected void checkConfiguration(@Nonnull final AbstractRubyRunConfiguration config) throws CantRunException {
@@ -108,11 +130,5 @@ public abstract class ColouredCommandLineState extends CommandLineState {
         catch (RuntimeConfigurationException e) {
             throw new CantRunException(e.getMessage(), e);
         }
-    }
-
-    protected void attachCompilerForJRuby(final AbstractRubyRunConfiguration config) {
-      /*  if (JRubySdkType.isJRubySDK(config.getSdk())) {
-            setModuleToCompile(config.getModule());
-        }     */
     }
 }

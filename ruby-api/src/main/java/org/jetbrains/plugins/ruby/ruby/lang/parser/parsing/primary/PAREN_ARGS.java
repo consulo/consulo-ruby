@@ -61,6 +61,20 @@ CALL_ARGS	: ARGS
 	@Nonnull
 	public static IElementType parse(final RBuilder builder)
 	{
+		final boolean doBlockAllowed = builder.setDoBlockAllowed(true);
+		try
+		{
+			return doParse(builder);
+		}
+		finally
+		{
+			builder.setDoBlockAllowed(doBlockAllowed);
+		}
+	}
+
+	@Nonnull
+	private static IElementType doParse(final RBuilder builder)
+	{
 		// TODO: optimize!!!
 		if(!builder.compareAndEat(tfLPAREN))
 		{
@@ -94,10 +108,15 @@ CALL_ARGS	: ARGS
 					return CALL_ARGS.parseBlockToArg(builder);
 				}
 
-				if(builder.compare(tSTAR) && !starSeen.get())
+				if(builder.compare(tSTAR))
 				{
 					starSeen.set(true);
 					return CALL_ARGS.parseArrayToArguments(builder);
+				}
+
+				if(CALL_ARGS.isArgumentsForwarding(builder))
+				{
+					return CALL_ARGS.parseArgumentsForwarding(builder);
 				}
 
 				IElementType result = BLOCK_CALL.parse(builder);
@@ -117,7 +136,7 @@ CALL_ARGS	: ARGS
 					return result;
 				}
 
-				if(assocSeen.get() && result != RubyElementTypes.ASSOC)
+				if(assocSeen.get() && !ASSOC_OR_ARG.isAllowedAfterAssoc(result))
 				{
 					builder.error(ErrorMsg.expected(tASSOC));
 				}

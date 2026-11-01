@@ -16,9 +16,11 @@
 
 package org.jetbrains.plugins.ruby.ruby.lang.highlighter.codeHighlighting.line;
 
+import consulo.language.psi.PsiElement;
+import consulo.ruby.interop.RubyInterop;
+import consulo.ruby.interop.RubyInteropProvider;
 import org.jetbrains.plugins.ruby.ruby.lang.psi.RStructuralElement;
 
-import com.intellij.java.language.psi.PsiMethod;
 import consulo.codeEditor.markup.GutterIconRenderer;
 import consulo.project.Project;
 import consulo.ui.ex.action.AnAction;
@@ -86,10 +88,15 @@ public class RubyGutterInfo extends RubyLineMarkerInfo
 			{
 				locations.add(RContainerPresentationUtil.getLocation((RStructuralElement) element));
 			}
-			// Here we process overriden Java methods
-			if(element instanceof PsiMethod)
+			// Here we process overriden foreign methods
+			else if(element instanceof PsiElement foreignElement)
 			{
-				locations.add(((PsiMethod) element).getContainingClass().getQualifiedName());
+				final RubyInteropProvider provider = RubyInterop.forElement(foreignElement);
+				final String location = provider != null ? provider.getContainingClassName(foreignElement) : null;
+				if(location != null)
+				{
+					locations.add(location);
+				}
 			}
 		}
 

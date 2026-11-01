@@ -16,13 +16,9 @@
 
 package org.jetbrains.plugins.ruby.ruby.codeInsight.types;
 
-import com.intellij.java.language.psi.PsiClass;
-import com.intellij.java.language.psi.PsiField;
-import com.intellij.java.language.psi.PsiJavaPackage;
-import com.intellij.java.language.psi.PsiMethod;
+import consulo.ruby.interop.RubyInterop;
 import consulo.application.progress.ProgressManager;
 import consulo.language.psi.PsiElement;
-import org.jetbrains.plugins.ruby.jruby.codeInsight.types.JRubyDuckTypeUtil;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.completion.RubyLookupItem;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Type;
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Types;
@@ -70,15 +66,15 @@ public class RTypeUtil
 
 			return RType.NOT_TYPED;
 		}
-		if(type == Type.MODULE && fileSymbol != null && fileSymbol.isJRubyEnabled())
+		if(type == Type.MODULE && fileSymbol != null && fileSymbol.isInteropEnabled())
 		{
-			final Symbol parent = symbol.getParentSymbol();
-			if(parent != null && parent.getType() == Type.FILE && "Java".equals(symbol.getName()))
+			final RType moduleType = RubyInterop.compute(provider -> provider.createModuleType(fileSymbol, symbol, context, inReference));
+			if(moduleType != null)
 			{
-				return new JavaModuleType(fileSymbol, symbol, context, inReference);
+				return moduleType;
 			}
 		}
-		if(type == Type.FILE || Types.MODULE_OR_CLASS.contains(type) || Types.JAVA.contains(type))
+		if(type == Type.FILE || Types.MODULE_OR_CLASS.contains(type) || Types.FOREIGN.contains(type))
 		{
 			return new RSymbolTypeImpl(fileSymbol, symbol, context, inReference);
 		}
@@ -115,38 +111,13 @@ public class RTypeUtil
 
 		Type type = symbol.getType();
 		final Children children = SymbolUtil.getAllChildrenWithSuperClassesAndIncludes(fileSymbol, context, symbol, null);
-		// Adding JRuby Specific children
-		if(type == Type.JAVA_PROXY_CLASS)
+		if(type == Type.FOREIGN_PROXY_CLASS || Types.FOREIGN.contains(type))
 		{
-			final PsiElement element = ((ProxyJavaSymbol) symbol).getPsiElement();
-			if(element instanceof PsiClass)
+			final Children foreignChildren = RubyInterop.getChildren(fileSymbol, symbol, context);
+			if(foreignChildren != null)
 			{
-				children.addChildren(JRubyDuckTypeUtil.getChildrenByJavaClass(fileSymbol, (PsiClass) element, context));
+				children.addChildren(foreignChildren);
 			}
-		}
-		if(type == Type.JAVA_CLASS)
-		{
-			final PsiElement element = ((JavaSymbol) symbol).getPsiElement();
-			assert element instanceof PsiClass;
-			children.addChildren(JRubyDuckTypeUtil.getChildrenByJavaClass(fileSymbol, (PsiClass) element, context));
-		}
-		if(type == Type.JAVA_PACKAGE)
-		{
-			final PsiElement element = ((JavaSymbol) symbol).getPsiElement();
-			assert element instanceof PsiJavaPackage;
-			children.addChildren(JRubyDuckTypeUtil.getChildrenByJavaPackage(fileSymbol, (PsiJavaPackage) element));
-		}
-		if(type == Type.JAVA_METHOD)
-		{
-			final PsiElement element = ((JavaSymbol) symbol).getPsiElement();
-			assert element instanceof PsiMethod;
-			children.addChildren(JRubyDuckTypeUtil.getChildrenByJavaMethod(fileSymbol, (PsiMethod) element));
-		}
-		if(type == Type.JAVA_FIELD)
-		{
-			final PsiElement element = ((JavaSymbol) symbol).getPsiElement();
-			assert element instanceof PsiField;
-			children.addChildren(JRubyDuckTypeUtil.getChildrenByJavaField(fileSymbol, (PsiField) element));
 		}
 
 		return createDuckTypeByChildren(fileSymbol, children, new HashSet<Symbol>(symbol.getChildren(fileSymbol).getAll()), createFilter(inReference));
@@ -175,9 +146,9 @@ public class RTypeUtil
 		}
 
 		// Here we process alternative names of Java methods
-		for(Symbol child : children.getSymbolsOfTypes(Type.JAVA_METHOD.asSet()).getAll())
+		for(Symbol child : children.getSymbolsOfTypes(Type.FOREIGN_METHOD.asSet()).getAll())
 		{
-			final String name = ((JavaSymbol) child).getJRubyName();
+			final String name = ((ForeignSymbol) child).getAlternativeName();
 			if(name != null)
 			{
 				allNames.put(name, child);
@@ -185,7 +156,7 @@ public class RTypeUtil
 		}
 
 		// Here we process java fields
-		for(Symbol child : children.getSymbolsOfTypes(Type.JAVA_FIELD.asSet()).getAll())
+		for(Symbol child : children.getSymbolsOfTypes(Type.FOREIGN_FIELD.asSet()).getAll())
 		{
 			final String name = child.getName();
 			if(!javaFieldNames.containsKey(name))
@@ -198,7 +169,7 @@ public class RTypeUtil
 		for(Symbol child : children.getChildrenByFilter(filter).getAll())
 		{
 			// We have already handled all fields!
-			if(!Types.FIELDS.contains(child.getType()) && !Type.JAVA_FIELD.asSet().contains(child.getType()))
+			if(!Types.FIELDS.contains(child.getType()) && !Type.FOREIGN_FIELD.asSet().contains(child.getType()))
 			{
 				allNames.put(child.getName(), child);
 			}

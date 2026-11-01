@@ -175,7 +175,7 @@ public class TypeInferenceHelper implements Disposable {
         }
         FileSymbol fileSymbol = context.fileSymbol;
         // Java method handling
-        if (symbol.getType() == Type.JAVA_METHOD) {
+        if (symbol.getType() == Type.FOREIGN_METHOD) {
             return RTypeUtil.createTypeBySymbol(fileSymbol, symbol, Context.ALL, true);
         }
         // Common ruby method call handling

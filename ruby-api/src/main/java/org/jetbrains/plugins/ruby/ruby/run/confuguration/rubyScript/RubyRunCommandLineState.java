@@ -54,8 +54,6 @@ public class RubyRunCommandLineState extends ColouredCommandLineState
 		final String scriptDir = VirtualFileUtil.getParentDir(config.getScriptPath());
 
 		addFilters(config, project, consoleBuilder, scriptDir);
-
-		attachCompilerForJRuby(config);
 	}
 
 	public static void addParams(GeneralCommandLine cmdLine, String argsString)

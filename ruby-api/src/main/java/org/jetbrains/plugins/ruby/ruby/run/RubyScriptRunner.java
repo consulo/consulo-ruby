@@ -29,11 +29,9 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.plugins.ruby.RBundle;
-import org.jetbrains.plugins.ruby.rails.actions.generators.GeneratorsUtil;
 import org.jetbrains.plugins.ruby.ruby.RubyUtil;
 import org.jetbrains.plugins.ruby.ruby.lang.TextUtil;
 import org.jetbrains.plugins.ruby.ruby.sdk.RubySdkUtil;
-import org.jetbrains.plugins.ruby.ruby.sdk.jruby.JRubySdkType;
 import org.jetbrains.plugins.ruby.support.utils.OSUtil;
 import org.jetbrains.plugins.ruby.support.utils.VirtualFileUtil;
 
@@ -113,7 +111,7 @@ public class RubyScriptRunner
 			validateSDK(sdk);
 			@NonNls
 			final String argument = "-e exec '" + TextUtil.concat(arguments) + "'";
-			return Runner.execute(Runner.createAndSetupCmdLine(additionalPath, workingDirectory, null, null, true, RubySdkUtil.getVMExecutablePath(sdk), argument));
+			return Runner.execute(Runner.createAndSetupCmdLine(additionalPath, workingDirectory, null, true, RubySdkUtil.getVMExecutablePath(sdk), argument));
 		}
 		catch(ExecutionException e)
 		{
@@ -132,7 +130,7 @@ public class RubyScriptRunner
 	 * @param provider              Provides commandline arguments
 	 * @param descFactory           User Factory for creating non default run content descriptors
 	 * @param workingDir            Working directory
-	 * @param sdk                   Ruby/JRuby Sdk
+	 * @param sdk                   Ruby Sdk
 	 * @param project               Idea Project
 	 */
 	public static void runRubyScriptInCosole(@Nullable final ProcessListener processListener, @Nullable final Filter[] consoleFilters, @Nullable final AnAction[] userActions, final boolean runInBackgroundThread, @Nonnull final String consoleTitle, @Nonnull final CommandLineArgumentsProvider provider, @Nullable final RunContentDescriptorFactory descFactory, @Nullable final String workingDir, @Nullable final Sdk sdk, @Nonnull final Project project)
@@ -156,14 +154,10 @@ public class RubyScriptRunner
 	@Nonnull
 	public static String[] getVMDefaultParams(Sdk sdk)
 	{
-		final String[] params = (JRubySdkType.isJRubySDK(sdk)) ? new String[1] : new String[RubyUtil.RUN_IN_CONSOLE_HACK_ARGUMENTS.length + 1];
+		final String[] params = new String[RubyUtil.RUN_IN_CONSOLE_HACK_ARGUMENTS.length + 1];
 		//noinspection ConstantConditions
 		params[0] = RubySdkUtil.getVMExecutablePath(sdk);
-
-		if(!JRubySdkType.isJRubySDK(sdk))
-		{
-			System.arraycopy(RubyUtil.RUN_IN_CONSOLE_HACK_ARGUMENTS, 0, params, 1, RubyUtil.RUN_IN_CONSOLE_HACK_ARGUMENTS.length);
-		}
+		System.arraycopy(RubyUtil.RUN_IN_CONSOLE_HACK_ARGUMENTS, 0, params, 1, RubyUtil.RUN_IN_CONSOLE_HACK_ARGUMENTS.length);
 		return params;
 	}
 
@@ -358,9 +352,15 @@ public class RubyScriptRunner
 		}
 	}
 
+	private static final String IO_EXCEPTION_PREFIX = "java.io.IOException:";
+
 	public static void showErrorMessage(Project project, String errorTitle, Exception exp)
 	{
-		String errorMessage = GeneratorsUtil.filterIoExceptionMessage(exp.getMessage());
+		String errorMessage = exp.getMessage();
+		if(errorMessage != null && errorMessage.startsWith(IO_EXCEPTION_PREFIX))
+		{
+			errorMessage = errorMessage.substring(IO_EXCEPTION_PREFIX.length());
+		}
 		if(errorMessage == null || errorMessage.length() == 0)
 		{
 			errorMessage = exp.toString();

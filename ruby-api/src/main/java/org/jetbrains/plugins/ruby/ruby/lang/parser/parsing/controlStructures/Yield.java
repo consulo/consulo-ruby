@@ -39,16 +39,17 @@ public class Yield implements RubyTokenTypes
 	{
 		RMarker statementMarker = builder.mark();
 		builder.match(kYIELD);
-		final boolean braceSeen = builder.compareAndEat(tfLPAREN);
-		// In this case we have only kYIELD keyword
-		if(CALL_ARGS.parse(builder) == RubyElementTypes.EMPTY_INPUT && !braceSeen)
+		// yield(args) is a primary: it may go on as an expression, yield(x) - y
+		if(builder.compare(tfLPAREN))
 		{
 			statementMarker.rollbackTo();
 			return RubyElementTypes.EMPTY_INPUT;
 		}
-		if(braceSeen)
+		// In this case we have only kYIELD keyword
+		if(CALL_ARGS.parse(builder) == RubyElementTypes.EMPTY_INPUT)
 		{
-			builder.match(tRPAREN);
+			statementMarker.rollbackTo();
+			return RubyElementTypes.EMPTY_INPUT;
 		}
 		statementMarker.done(RubyElementTypes.YIELD_STATEMENT);
 		return RubyElementTypes.YIELD_STATEMENT;

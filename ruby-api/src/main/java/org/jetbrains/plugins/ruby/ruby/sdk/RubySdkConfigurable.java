@@ -84,15 +84,6 @@ public class RubySdkConfigurable implements AdditionalDataConfigurable {
 
         modificator.commitChanges();
 
-        // Change libraries facet libraries
-//		IdeaInternalUtil.runInsideWriteAction(new ThrowableRunnable<Exception>()
-//		{
-//			@Override
-//			public void run() throws Exception
-//			{
-//				JRubySdkTableListener.updateLibrary(mySdk.getName(), modificator.getRoots(OrderRootType.CLASSES));
-//			}
-//		});
     }
 
     @RequiredUIAccess

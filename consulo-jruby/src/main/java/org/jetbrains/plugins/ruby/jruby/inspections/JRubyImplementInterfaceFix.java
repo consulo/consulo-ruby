@@ -16,20 +16,21 @@
 
 package org.jetbrains.plugins.ruby.jruby.inspections;
 
-import jakarta.annotation.Nonnull;
-import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.Symbol;
+import consulo.application.Application;
+import consulo.codeEditor.Editor;
+import consulo.fileEditor.FileEditorManager;
+import consulo.language.editor.generation.ImplementMethodHandler;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
-import consulo.localize.LocalizeValue;
-import consulo.codeEditor.Editor;
-import consulo.fileEditor.FileEditor;
-import consulo.fileEditor.FileEditorManager;
-import consulo.fileEditor.TextEditor;
-import consulo.project.Project;
-import consulo.virtualFileSystem.VirtualFile;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
-import rb.implement.ImplementHandler;
+import consulo.localize.LocalizeValue;
+import consulo.navigation.OpenFileDescriptorFactory;
+import consulo.project.Project;
+import consulo.ui.annotation.RequiredUIAccess;
+import consulo.virtualFileSystem.VirtualFile;
+import jakarta.annotation.Nonnull;
+import org.jetbrains.plugins.ruby.ruby.lang.RubyLanguage;
 
 /**
  * Created by IntelliJ IDEA.
@@ -39,13 +40,11 @@ import rb.implement.ImplementHandler;
  */
 public class JRubyImplementInterfaceFix implements LocalQuickFix
 {
-	protected Symbol mySymbol;
 	protected PsiElement myEndElement;
 
-	public JRubyImplementInterfaceFix(@Nonnull final PsiElement endElement, @Nonnull final Symbol symbol)
+	public JRubyImplementInterfaceFix(@Nonnull final PsiElement endElement)
 	{
 		myEndElement = endElement;
-		mySymbol = symbol;
 	}
 
 	@Override
@@ -55,34 +54,27 @@ public class JRubyImplementInterfaceFix implements LocalQuickFix
 		return LocalizeValue.localizeTODO("Implement methods");
 	}
 
-	@Nonnull
-	public String getFamilyName()
+	@Override
+	public boolean startInWriteAction()
 	{
-		return "JRuby";
+		return false;
 	}
 
 	@Override
+	@RequiredUIAccess
 	public void applyFix(@Nonnull final Project project, @Nonnull final ProblemDescriptor descriptor)
 	{
-		final ImplementHandler handler = null; //(ImplementHandler) RubyLanguage.INSTANCE.getImplementMethodsHandler();
-		if(handler != null)
+		final ImplementMethodHandler handler = Application.get().getExtensionPoint(ImplementMethodHandler.class).getOrBuildCache(ImplementMethodHandler.KEY).get(RubyLanguage.INSTANCE);
+		final PsiFile file = myEndElement.getContainingFile();
+		final VirtualFile virtualFile = file != null ? file.getVirtualFile() : null;
+		if(handler == null || virtualFile == null)
 		{
-			// Looking for editor
-			Editor editor = null;
-			final PsiFile file = myEndElement.getContainingFile();
-			final VirtualFile virtualFile = file.getVirtualFile();
-			if(virtualFile != null)
-			{
-				for(FileEditor fileEditor : FileEditorManager.getInstance(project).getEditors(virtualFile))
-				{
-					if(fileEditor instanceof TextEditor)
-					{
-						editor = ((TextEditor) fileEditor).getEditor();
-						break;
-					}
-				}
-			}
-			handler.execute(editor, project, myEndElement, mySymbol);
+			return;
+		}
+		final Editor editor = FileEditorManager.getInstance(project).openTextEditor(OpenFileDescriptorFactory.getInstance(project).builder(virtualFile).offset(myEndElement.getTextOffset()).build(), true);
+		if(editor != null && handler.isValidFor(editor, file))
+		{
+			handler.invoke(project, editor, file);
 		}
 	}
 }

@@ -66,12 +66,12 @@ public class FileSymbol {
     private static final String NEW_LINE = "\n";
     @NonNls
     private int listNumber;
-    private boolean isJRubyEnabled;
+    private boolean isInteropEnabled;
 
-    public FileSymbol(@Nullable final FileSymbol baseFileSymbol, @Nonnull final Project project, final boolean jrubyEnabled) {
+    public FileSymbol(@Nullable final FileSymbol baseFileSymbol, @Nonnull final Project project, final boolean interopEnabled) {
         myBaseFileSymbol = baseFileSymbol;
         myProject = project;
-        isJRubyEnabled = jrubyEnabled;
+        isInteropEnabled = interopEnabled;
         if (myBaseFileSymbol != null) {
             myRootSymbol = myBaseFileSymbol.getRootSymbol();
             myLoadPath = new LoadPath(myBaseFileSymbol.getLoadPath());
@@ -143,8 +143,8 @@ public class FileSymbol {
         return myRootSymbol;
     }
 
-    public boolean isJRubyEnabled() {
-        return isJRubyEnabled;
+    public boolean isInteropEnabled() {
+        return isInteropEnabled;
     }
 
     public void process(@Nonnull final String url, @Nonnull final InterpretationMode mode, final boolean forceAdd) {
